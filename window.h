@@ -23,6 +23,9 @@ private:
     double y_step;
     double x_skew_step;
     double y_skew_step;
+    double speed;
+    double alpha;
+    double alpha_step;
     QList<QChar> pressed_buttons;
     void setCar();
     void drawCar(QPainter &painter);
@@ -34,8 +37,8 @@ private:
     void initialize_constant_of_moving();
 protected:
     void keyPressEvent(QKeyEvent *event);
-    int x = 0;
-    int y = 0;
+    double x = 0;
+    double y = 0;
     int center_x_window;
     int center_y_window;
     char forward = ' ';
