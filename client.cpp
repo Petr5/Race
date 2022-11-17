@@ -7,9 +7,9 @@
 #include <QTime>
 #include <QMessageBox>
 
-Client::Client(QString serverName, QWidget* parent)
-    : QWidget(parent), nextBlockSize(0), revision(0)
-    // Устанавливаем nextBlockSize и revision равными нулю
+Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent)
+    : QWidget(parent), nextBlockSize(0), dialog(dialog), NickName(NickName)
+    // Устанавливаем nextBlockSize равным нулю
 {
     // Инициализируем сокет
     localSocket = new QLocalSocket(this);
@@ -24,6 +24,8 @@ Client::Client(QString serverName, QWidget* parent)
     // Устанавливаем соединение между сигналом подключения сокета к серверу
     // и обработчиком сигнала
     connect(localSocket, SIGNAL(connected()), SLOT(slotConnected()));
+    connect(localSocket, SIGNAL(connected()), dialog, SLOT(slotClientConnected()));
+
     // Соединяем сигнал сокета о готовности приёма данных данных с обработчиком данных
     connect(localSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
 
@@ -106,16 +108,12 @@ void Client::slotSendToServer(QString command)
     QByteArray arrayBlock;
     QDataStream out(&arrayBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_3);
-//    sender()->
-//    window->x;
-    ++revision;
+
     qInfo() << command;
-//    QString message = "Revision: " + QString("%1").arg(revision);
+
     QString message = command;
-    out << quint16(0) << QTime::currentTime() << message;
-//    window;
-//    window->x;
-//    qInfo() << window;
+    out << quint16(0) << QTime::currentTime() << NickName + ": " + message;
+
     out.device()->seek(0);
     out << quint16(arrayBlock.size() - sizeof(quint16));
 
@@ -128,16 +126,12 @@ void Client::SendToServer(QString command)
     QByteArray arrayBlock;
     QDataStream out(&arrayBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_3);
-//    sender()->
-//    window->x;
-    ++revision;
+
     qInfo() << "try send to server " + command;
-//    QString message = "Revision: " + QString("%1").arg(revision);
+
     QString message = command;
     out << quint16(0) << QTime::currentTime() << message;
-//    window;
-//    window->x;
-//    qInfo() << window;
+
     out.device()->seek(0);
     out << quint16(arrayBlock.size() - sizeof(quint16));
 
@@ -147,6 +141,8 @@ void Client::SendToServer(QString command)
 // Слот обработки сигнала соединения с сервером
 void Client::slotConnected()
 {
+
+
     textEdit->append("Received the connected() signal");
 //    present_yourself();
     timer = new QTimer();
@@ -159,7 +155,8 @@ void Client::slotConnected()
 
 void Client::present_yourself(){
     qInfo() << "try to present yourself";
-    QString command = "100 Peter";
+//    NickName = "Peter";
+    QString command = "100 " + NickName;
 //    while (!server_authenticate){
         SendToServer(command);
 //    }

@@ -19,12 +19,15 @@ class Client : public QWidget
     Q_OBJECT
 
 public:
-    Client(QString serverName, QWidget* parent = 0);
+    friend class ConnectDialog;
+    Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent = 0);
     ~Client();
     Window* window;
 
 
 private:
+    QDialog* dialog;
+    QString NickName;
     // Указатель на QLocalSocket
     QLocalSocket* localSocket;
 

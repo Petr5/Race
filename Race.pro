@@ -10,11 +10,13 @@ CONFIG += c++17
 
 SOURCES += \
     client.cpp \
+    connectdialog.cpp \
     main.cpp \
     window.cpp
 
 HEADERS += \
     client.h \
+    connectdialog.h \
     window.h
 
 FORMS +=

@@ -28,7 +28,7 @@ Window::Window(Client * client)
 void Window::updateInformationForServer(){
     QSignalMapper* signalMapper = new QSignalMapper (this) ;
     connect (timer,  SIGNAL(timeout()), signalMapper, SLOT(map())) ;
-    connect (timer,  SIGNAL(timeout()), this, SLOT(print_coordinates()));
+//    connect (timer,  SIGNAL(timeout()), this, SLOT(print_coordinates()));
     signalMapper -> setMapping (timer, QString("300 x=" + QString::number(x) + " y=" + QString::number(y))) ;
     connect(signalMapper, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
 }
