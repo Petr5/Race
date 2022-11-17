@@ -13,6 +13,8 @@ class QPushButton;
 class QLocalServer;
 QT_END_NAMESPACE
 
+
+
 class Server : public QDialog
 {
     Q_OBJECT
@@ -26,7 +28,10 @@ private slots:
 
     void slotNewConnection();
 private:
-    QString NickName;
+    static int cuurent_id_user;
+    QList<QString> NickNames;
+//    QString NickName;
+    QMap<QString, QPair<int, int>> coordinates_of_players;
     QLocalServer *server;
     QStringList fortunes;
     QLabel *statusLabel;
@@ -36,6 +41,8 @@ private:
     void SendACK(QLocalSocket *localSocket);
     void SendACKName(QLocalSocket *localSocket);
     void SendACKPosition(QLocalSocket *localSocket);
+//    void initializeServerConstant();
 };
+
 
 #endif

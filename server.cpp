@@ -58,6 +58,7 @@ Server::Server(QWidget *parent)
 //    qInfo() << clientConnection;
 //    connect(clientConnection, SIGNAL(ReadyRead()), this, SLOT(ReadClient()));
 //    connect(server, &QLocalServer::readyRead, this, &Client::readFortune);
+//    initializeServerConstant();
 }
 
 //void Server::SendACK(){
@@ -76,6 +77,11 @@ Server::Server(QWidget *parent)
 //    clientConnection->flush();
 //    clientConnection->disconnectFromServer();
 //}
+
+//void Server::initializeServerConstant(){
+//    Server::cuurent_id_user = 0;
+//}
+int Server::cuurent_id_user = 0;
 
 void Server::ReadClient(){
     qInfo() << "try to read data from client";
@@ -110,6 +116,8 @@ void Server::slotReadClient()
 {
     // Получаем QLocalSocket после срабатывания сигнала о готовности передачи данных
     QLocalSocket* localSocket = (QLocalSocket*)sender();
+//    localSocket->moveToThread(
+//    DataStrean stream = this.read.DataStream;
     // Создаём входной поток получения данных на основе сокета
     QDataStream in(localSocket);
     // Устанавливаем версию сериализации данных потока. У клиента и сервера они должны быть одинаковыми
@@ -131,30 +139,67 @@ void Server::slotReadClient()
         QTime time;
         QString string;
         in >> time >> string;
+        qInfo() << "aaept stering from client " << string;
 
-        // Преобразуем полученные данные и показываем их в виджете
-        QString message = time.toString() + " " + "Client has sent - " + string;
-        QString code = string.split(" ")[0];
-        qInfo() << "code of this message is " << code;
-        if (code == "100"){
-            qInfo() << "try Nickname for current user";
-            NickName = string.split(" ")[1];
-            qInfo() << "Nickname for current user is " << NickName;
-            SendACKName(localSocket);
-        }
-        else if (code == "150"){
-            server->disconnect();
-        }
-        textEdit->append(message);
+//        if (string != ""){
+            qInfo() << "aaept stering from client " << string;
+//            qInfo() << "after split " << string.split(" ");
+//            QString NickName = string.split(" ")[0];
+//            QString code = string.split(" ")[1];
+            QString code = string.split(" ")[0];
 
-        nextBlockSize = 0;
+            qDebug() << "server sent to client " << string;
+//            qDebug() << "Nickname is " << NickName;
+            qDebug() << "code of this message is " << code;
+            if (code == "100"){
+                qInfo() << "try Nickname for current user";
+    //            NickNames = string.split(" ")[1];
+    //            NickNames[Server::cuurent_id_user++] =  string.split(" ")[1];
+    //            NickNames.append(string.split(" ")[1]);
 
-        // Отправляем ответ клиенту
+    //            qInfo() << "Nickname for current user is " << NickNames[Server::cuurent_id_user++];
+                SendACKName(localSocket);
+            }
+            else if (code == "150"){
+                server->disconnect();
+            }
+            else if (code == "200"){
+                ;
+            }
+            else if (code == "300"){
+//                coordinates_of_players[NickName] = qMakePair(string.split(" ")[2].toInt(), string.split(" ")[3].toInt());
+    //              const QPair<int, int> pair= qMakePair(string.split(" ")[2].toInt(), string.split(" ")[3].toInt());
 
-        sendToClient(localSocket, "Server response: received \"" + string + "\"");
-//        SendACK(localSocket);
+    //            coordinates_of_players.insert(NickName, pair);
+//                qInfo() << "now coordinates_of_players are " << coordinates_of_players;
+                ;
+            }
+            else{
+//                QMessageBox::critical(this, "unknown code", code);
+                ;
+            }
 
-//        SendACK(localSocket);
+            QString message = time.toString() + " " + "Client has sent - " + string;
+            textEdit->append(message);
+
+            nextBlockSize = 0;
+
+            // Отправляем ответ клиенту
+
+            sendToClient(localSocket, "Server response: received \"" + string + "\"");
+    //        SendACK(localSocket);
+
+    //        SendACK(localSocket);
+//        }
+//        else{
+//            qInfo() << "send empty string";
+//            QString message = time.toString() + " " + "Client has sent - " + string;
+
+//            textEdit->append(message);
+//            sendToClient(localSocket, "Server response: received \"" + string + "\"");
+
+//        }
+
     }
 }
 
@@ -170,7 +215,9 @@ void Server::sendToClient(QLocalSocket* localSocket, const QString& string)
     out.setVersion(QDataStream::Qt_5_3);
     // Записываем в поток данные для отправки. На первом месте идёт нулевой размер блока
     out << quint16(0) << QTime::currentTime() << string;
+//    out.
 
+//    localSocket->write();
     // Перемещаем указатель на начало блока
     out.device()->seek(0);
     // Записываем двухбайтное значение действительного размера блока без учёта пересылаемого размера блока
