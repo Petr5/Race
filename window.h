@@ -1,41 +1,50 @@
 #ifndef WINDOW_H
 #define WINDOW_H
-
 #include "client.h"
 #include <QWidget>
 #include <QPainterPath>
-#include <QTimer>
-class Client;
 class Window : public QWidget
 {
     Q_OBJECT
 
 public:
     Window(Client * client);
-    friend Client;
-    int x = 66;
-    int y = 66;
 
+public slots:
+
+private slots:
+    void moveCar();
 public slots:
     void updateInformationForServer();
 private:
-    QPainterPath shape;
-    QTimer *timer;
-    Client* client;
-    void setShape(const QPainterPath &shape);
-    void setShape();
-    void drawShape(QPainter &painter);
+    Client * client;
+    QTimer* timer;
+    QPainterPath car;
+    QPainterPath field;
+    int width_road;
+    int direction;
+
+    double speed;
+    double alpha;
+    double alpha_step;
+    QList<QChar> pressed_buttons;
+    void setCar();
+    void drawCar(QPainter &painter);
     void paintEvent(QPaintEvent *event);
-    void moveCar();
 
     void setField();
+    void drawField(QPainter &painter);
+    void define_the_direction_ofmoving();
+    void initialize_constant_of_moving();
 protected:
     void keyPressEvent(QKeyEvent *event);
-
+    double x = 0;
+    double y = 0;
+    int center_x_window;
+    int center_y_window;
     char forward = ' ';
     QPainter* my_painter = nullptr;
-private slots:
-    void print_coordinates();
+    void keyReleaseEvent(QKeyEvent *event);
 };
 
 #endif // WINDOW_H

@@ -9,8 +9,8 @@ int main(int argc, char *argv[])
 
     Client client(serverName);
     client.show();
-//    Window window(&client);
-//    window.show();
+    Window window(&client);
+    window.show();
 //    client.window = &window;
 
     return a.exec();
