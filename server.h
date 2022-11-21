@@ -7,6 +7,7 @@
 #include <QDialog>
 #include <QLocalSocket>
 #include <QTextEdit>
+#include <QTimer>
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QPushButton;
@@ -31,7 +32,7 @@ private:
     static int cuurent_id_user;
     QList<QString> NickNames;
 //    QString NickName;
-    QMap<QString, QPair<int, int>> coordinates_of_players;
+    QMap<QString, QList<double>> coordinates_of_players;
     QLocalServer *server;
     QStringList fortunes;
     QLabel *statusLabel;
@@ -42,6 +43,8 @@ private:
     void SendACKName(QLocalSocket *localSocket);
     void SendACKPosition(QLocalSocket *localSocket);
 //    void initializeServerConstant();
+    void sendPlayersPosition(QLocalSocket *localSocket, int nmb_packet);
+
 };
 
 
