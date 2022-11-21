@@ -12,10 +12,10 @@ Server::Server(QWidget *parent)
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     QString serverName("RaceServer");
 
-    QLocalServer::removeServer(serverName);
+    QHostAddress* addr = new QHostAddress("127.0.0.1");
 
-    server = new QLocalServer(this);
-    if (!server->listen(serverName)) {
+    server = new QTcpServer(this);
+    if (!server->listen(*addr, 3333)) {
         QMessageBox::critical(this, tr("Local Race Server"),
                               tr("Unable to start the server: %1.")
                               .arg(server->errorString()));
@@ -34,7 +34,7 @@ Server::Server(QWidget *parent)
     quitButton->setAutoDefault(false);
     connect(quitButton, &QPushButton::clicked, this, &Server::close);
 
-    connect(server, &QLocalServer::newConnection, this, &Server::slotNewConnection);
+    connect(server, &QTcpServer::newConnection, this, &Server::slotNewConnection);
 
 
     textEdit = new QTextEdit;
@@ -67,7 +67,7 @@ int Server::cuurent_id_user = 0;
 
 void Server::ReadClient(){
     //qInfo() << "try to read data from client";
-    QLocalSocket *sock = server->nextPendingConnection();
+    QTcpSocket *sock = server->nextPendingConnection();
 
     if( !sock->waitForConnected() )
         return;
@@ -84,7 +84,7 @@ void Server::ReadClient(){
 void Server::slotNewConnection()
 {
     // Получаем сокет, подключённый к серверу
-    QLocalSocket* localSocket = server->nextPendingConnection();
+    QTcpSocket* localSocket = server->nextPendingConnection();
     // Соединяем сигнал отключения сокета с обработчиком удаления сокета
     connect(localSocket, SIGNAL(disconnected()), localSocket, SLOT(deleteLater()));
     // Соединяем сигнал сокета о готовности передачи данных с обработчиком данных
@@ -96,8 +96,8 @@ void Server::slotNewConnection()
 // Слот чтения информации от клиента
 void Server::slotReadClient()
 {
-    // Получаем QLocalSocket после срабатывания сигнала о готовности передачи данных
-    QLocalSocket* localSocket = (QLocalSocket*)sender();
+    // Получаем QTcpSocket после срабатывания сигнала о готовности передачи данных
+    QTcpSocket* localSocket = (QTcpSocket*)sender();
 //    localSocket->moveToThread(
 //    DataStrean stream = this.read.DataStream;
     // Создаём входной поток получения данных на основе сокета
@@ -191,7 +191,7 @@ void Server::slotReadClient()
 }
 
 // Метод для отправки клиенту подтверждения о приёме информации
-void Server::sendToClient(QLocalSocket* localSocket, const QString& string)
+void Server::sendToClient(QTcpSocket* localSocket, const QString& string)
 {
     // Поскольку заранее размер блока неизвестен (параметр string может быть любой длины),
     // вначале создаём объект array класса QByteArray
@@ -214,18 +214,18 @@ void Server::sendToClient(QLocalSocket* localSocket, const QString& string)
     localSocket->write(array);
 }
 
-void Server::SendACK(QLocalSocket* localSocket){
+void Server::SendACK(QTcpSocket* localSocket){
     sendToClient(localSocket, "ACK");
 }
 
-void Server::SendACKName(QLocalSocket* localSocket){
+void Server::SendACKName(QTcpSocket* localSocket){
     sendToClient(localSocket, "ACK Name");
 }
-void Server::SendACKPosition(QLocalSocket* localSocket){
+void Server::SendACKPosition(QTcpSocket* localSocket){
     sendToClient(localSocket, "ACK Position");
 }
 
-void Server::sendPlayersPosition(QLocalSocket* localSocket, int nmb_packet){
+void Server::sendPlayersPosition(QTcpSocket* localSocket, int nmb_packet){
     QString message = "211 " + QString::number(coordinates_of_players.size()) + '\n';
     for (auto it = coordinates_of_players.begin(); it != coordinates_of_players.end(); ++it){
         message += it.key() + " " + QString::number(it.value()[0]) + " " + QString::number(it.value()[1]) + " " + QString::number(it.value()[2]) + '\n';

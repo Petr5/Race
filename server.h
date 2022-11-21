@@ -5,13 +5,13 @@
 #define SERVER_H
 
 #include <QDialog>
-#include <QLocalSocket>
+#include <QTcpSocket>
 #include <QTextEdit>
 #include <QTimer>
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QPushButton;
-class QLocalServer;
+class QTcpServer;
 QT_END_NAMESPACE
 
 
@@ -33,17 +33,17 @@ private:
     QList<QString> NickNames;
 //    QString NickName;
     QMap<QString, QList<double>> coordinates_of_players;
-    QLocalServer *server;
+    QTcpServer *server;
     QStringList fortunes;
     QLabel *statusLabel;
 //    void SendACK();
     QTextEdit* textEdit;
-    void sendToClient(QLocalSocket *localSocket, const QString &string);
-    void SendACK(QLocalSocket *localSocket);
-    void SendACKName(QLocalSocket *localSocket);
-    void SendACKPosition(QLocalSocket *localSocket);
+    void sendToClient(QTcpSocket *localSocket, const QString &string);
+    void SendACK(QTcpSocket *localSocket);
+    void SendACKName(QTcpSocket *localSocket);
+    void SendACKPosition(QTcpSocket *localSocket);
 //    void initializeServerConstant();
-    void sendPlayersPosition(QLocalSocket *localSocket, int nmb_packet);
+    void sendPlayersPosition(QTcpSocket *localSocket, int nmb_packet);
 
 };
 
