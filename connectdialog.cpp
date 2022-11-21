@@ -35,7 +35,7 @@ ConnectDialog::ConnectDialog(QWidget *parent): QDialog(parent)
 void ConnectDialog::slotPushButtonClicked(){
 
     client = new Client(hostname->text(), this, NickName->text());
-//    client->NickName = NickName->text();
+    client->NickName = NickName->text();
     client->show();
     Window *window = new Window(client);
     window->show();

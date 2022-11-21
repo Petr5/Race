@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QTime>
 #include <QMessageBox>
+#include <QSignalMapper>
 
 Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent)
     : QWidget(parent), nextBlockSize(0), dialog(dialog), NickName(NickName)
@@ -14,10 +15,12 @@ Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* p
     // Инициализируем сокет
     localSocket = new QLocalSocket(this);
 
+//    QString serverName = "RaceServer";
     // Устанавливаем соединение между сигналом ошибки сокета с обработчиком ошибок
     connect(localSocket, &QLocalSocket::errorOccurred, this, &Client::slotError);
 
     localSocket->bytesToWrite();
+    qInfo() << "server name " << serverName;
     // Устанавливаем имя сервера, к которому сокет должен подключаться
     localSocket->setServerName(serverName);
 
@@ -26,22 +29,15 @@ Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* p
     connect(localSocket, SIGNAL(connected()), SLOT(slotConnected()));
     connect(localSocket, SIGNAL(connected()), dialog, SLOT(slotClientConnected()));
 
-    // Соединяем сигнал сокета о готовности приёма данных данных с обработчиком данных
     connect(localSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
 
     // Инициализируем элементы интерфейса
     textEdit = new QTextEdit;
-    sendRevision = new QPushButton("Send next revision");
-
-    // Соединяем нажатие кнопки с обработчиком, передающим информацию о ревизии на сервер
-//    connect(sendRevision, SIGNAL(clicked()), this, SLOT(slotSendToServer()));
 
     // Настраиваем элементы интерфейса и формируем вид окна клиента
     textEdit->setReadOnly(true);
     QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(new QLabel("Sender revisions"));
     layout->addWidget(textEdit);
-    layout->addWidget(sendRevision);
     setLayout(layout);
 
     // Подключаем сокет к серверу
@@ -53,7 +49,10 @@ Client::~Client()
 
 }
 
-// Слот чтения информации, получаемой от сервера
+
+void Client::setPointer_to_UI(Window* window){
+    this->window = window;
+}
 void Client::slotReadyRead()
 {
     // Всё аналогично приёму информации на стороне сервера
@@ -82,6 +81,10 @@ void Client::slotReadyRead()
                 timer->stop();
             }
         }
+        else if (code == "211"){
+            //qInfo() << "information about other players \n" << string;
+            CallUpdateUI(string);
+        }
         textEdit->append(time.toString() + " " + string);
         nextBlockSize = 0;
     }
@@ -101,7 +104,6 @@ void Client::slotError(QLocalSocket::LocalSocketError error)
     textEdit->append(strError);
 }
 
-// Слот передачи информации на сервер
 void Client::slotSendToServer(QString command)
 {
     // Блок для передачи формируется аналогично тому, как это делается на сервере
@@ -109,10 +111,10 @@ void Client::slotSendToServer(QString command)
     QDataStream out(&arrayBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_3);
 
-    qInfo() << command;
-
+    //qInfo() << command;
+//    qInfo() << "client sent to server " << command;
     QString message = command;
-    out << quint16(0) << QTime::currentTime() << NickName + ": " + message;
+    out << quint16(0) << QTime::currentTime() << NickName + " " + message;
 
     out.device()->seek(0);
     out << quint16(arrayBlock.size() - sizeof(quint16));
@@ -127,10 +129,10 @@ void Client::SendToServer(QString command)
     QDataStream out(&arrayBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_3);
 
-    qInfo() << "try send to server " + command;
+    //qInfo() << "try send to server " + command;
 
     QString message = command;
-    out << quint16(0) << QTime::currentTime() << message;
+    out << quint16(0) << QTime::currentTime() << NickName + " " + message;
 
     out.device()->seek(0);
     out << quint16(arrayBlock.size() - sizeof(quint16));
@@ -138,7 +140,6 @@ void Client::SendToServer(QString command)
     localSocket->write(arrayBlock);
 }
 
-// Слот обработки сигнала соединения с сервером
 void Client::slotConnected()
 {
 
@@ -154,9 +155,9 @@ void Client::slotConnected()
 }
 
 void Client::present_yourself(){
-    qInfo() << "try to present yourself";
+    //qInfo() << "try to present yourself";
 //    NickName = "Peter";
-    QString command = "100 " + NickName;
+    QString command = "100";
 //    while (!server_authenticate){
         SendToServer(command);
 //    }

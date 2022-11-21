@@ -7,6 +7,8 @@ Window::Window(Client * client)
 
 {
     this->client = client;
+    NickName = client->NickName;
+    client->setPointer_to_UI(this);
     width_road = 60;
     setCar();
     setField();
@@ -14,28 +16,65 @@ Window::Window(Client * client)
     QTimer* move_the_car = new QTimer();
    connect(move_the_car, SIGNAL(timeout()), this, SLOT(moveCar()));
 
-//    slotSendToServer();
     move_the_car->start(50);
 
     timer = new QTimer();
-   //    connect(timer, SIGNAL(timeout()), this, SLOT(updateInformationForServer()));
-      connect(timer, SIGNAL(timeout()), this, SLOT(updateInformationForServer()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateInformationForServer()));
+    timer->start(50);
 
-   //    slotSendToServer();
-       timer->start(5000);
 
+//    QTimer* synchronize = new QTimer();
+//    connect(synchronize, SIGNAL(timeout()), this, SLOT(synchronizeClientWithServer()));
+//    synchronize->start(5000);
 }
+static int nmb_packet = -1;
 void Window::updateInformationForServer(){
-    QSignalMapper* signalMapper = new QSignalMapper (this) ;
-    connect (timer,  SIGNAL(timeout()), signalMapper, SLOT(map())) ;
-//    connect (timer,  SIGNAL(timeout()), this, SLOT(print_coordinates()));
-    signalMapper -> setMapping (timer, QString("300 x=" + QString::number(x) + " y=" + QString::number(y))) ;
-    connect(signalMapper, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
+//    QSignalMapper* signalMapper_300 = new QSignalMapper (this) ;
+//    connect (timer,  SIGNAL(timeout()), signalMapper_300, SLOT(map())) ;
+//    qInfo() << "start update information on server";
+//    qInfo() << "sent to server " << QString("300 " + QString::number(x) + " " + QString::number(y));
+//    signalMapper_300 -> setMapping (timer, QString("300 " + QString::number(x) + " " + QString::number(y))) ;
+//    connect(signalMapper_300, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
+    ++nmb_packet;
+    qInfo() << "sent to server " + QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + "packet " + QString::number(nmb_packet);
+    client->SendToServer(QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + " packet " + QString::number(nmb_packet));
+
+//    QSignalMapper* signalMapper_200 = new QSignalMapper (this) ;
+//    connect (timer,  SIGNAL(timeout()), signalMapper_200, SLOT(map())) ;
+//    signalMapper_200 -> setMapping (timer, QString("200 ") + "packet " + QString::number(nmb_packet)) ;
+//    connect(signalMapper_200, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
+    client->SendToServer(QString("200 ") + "packet " + QString::number(nmb_packet));
+}
+void Client::CallUpdateUI(QString message){
+//    QSignalMapper* signalMapper_211 = new QSignalMapper (this) ;
+//    connect (timer,  SIGNAL(timeout()), signalMapper_200, SLOT(map())) ;
+//    signalMapper_211 -> setMapping (timer, QString("200")) ;
+//    connect(signalMapper_211, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));/
+    //qInfo () << "mainwindow" << window;
+
+    window->CallDrawCars(message);
 }
 void Window::initialize_constant_of_moving(){
     speed = 0.5;
     alpha = 0;
-    alpha_step = 3;
+    alpha_step = 0;
+    alpha_step_step = 0;
+    alpha_step_step_scale = 0.3;
+}
+void Window::CallDrawCars(QString message){
+    //qInfo() << "callDrawCars message is " + message;
+    int amount = message.split('\n')[0].split(" ")[1].toInt();
+    qInfo() << "amount of cars is " << amount;
+    qInfo() << "split message is " << message.split('\n');
+    for (int i = 1; i <= amount; ++i){
+        qInfo() << "i is " << i;
+//        coordinates_of_players[message.split('\n')[i].split(" ")[0]] = qMakePair(message.split('\n')[i].split(" ")[1].toDouble(), message.split('\n')[i].split(" ")[2].toDouble());
+        const QList<double> list = QList<double>({message.split('\n')[i].split(" ")[1].toDouble(), message.split('\n')[i].split(" ")[2].toDouble(), message.split('\n')[i].split(" ")[3].toDouble()});
+        qInfo() << "list is " << list;
+        coordinates_of_players.insert(message.split('\n')[i].split(" ")[0], list);
+    }
+    qInfo() << "map on client is " << coordinates_of_players;
+    update();
 }
 void Window::setCar()
 {
@@ -50,20 +89,50 @@ void Window::setField()
     QPainterPath roundRectPath;
     center_y_window = size().height() / 2;
     center_x_window = size().width() / 2;
-//    qInfo() << "try to set field";
+//    //qInfo() << "try to set field";
     roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
     roundRectPath.addRoundedRect(width_road, width_road, 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
     this->field = roundRectPath;
     update();
 }
 
+void Window::drawCars(QPainter &painter)
+{
+    qInfo() << "size of map of clients on client " << coordinates_of_players.size();
+    qInfo() << "map is " << coordinates_of_players;
+    for (auto it = coordinates_of_players.begin(); it != coordinates_of_players.end(); ++it){
+        double x = it.value()[0];
+        double y = it.value()[1];
+        double alpha = it.value()[2];
+        qInfo() << "values frmo the server are x " << x << " y " << y << " z " << alpha;
+        qInfo() << "nickname on the server is " << it.key() << " while on the client " << NickName;
+        if(it.key() == NickName){
+            qInfo() << "nickname on the server and client IS THE SAME!!!!!!!!!!!!!!!!!!!!!";
+            x_server = it.value()[0];
+            y_server = it.value()[1];
+            this->alpha = alpha;
+        }
+
+//        qInfo() << it.key() << " x y from server " << x << y << " while client x y are " << this->x << " " << this->y;
+
+        painter.resetTransform();
+        painter.translate(width_road / 3 + x, width_road / 3 + y);
+        painter.rotate(-alpha);
+        painter.fillPath(car, Qt::blue);
+    }
+
+}
+void Window::synchronizeClientWithServer(){
+    x = x_server;
+    y = y_server;
+}
+
 void Window::drawCar(QPainter &painter)
 {
     painter.resetTransform();
-    painter.translate(width_road / 3 + x, width_road / 3 + y);
+    painter.translate(width_road / 3 + this->x, width_road / 3 + this->y);
     painter.rotate(-alpha);
     painter.fillPath(car, Qt::blue);
-
 }
 void Window::drawField(QPainter &painter)
 {
@@ -74,8 +143,9 @@ void Window::drawField(QPainter &painter)
 }
 void Window::paintEvent(QPaintEvent *event)
 {
-//    qInfo() << "window size now is " << size();
-//    qInfo() << "height is " << size().height();
+        qInfo() << "paintevent starts";
+//    //qInfo() << "window size now is " << size();
+//    //qInfo() << "height is " << size().height();
 
     QPainter painter(this);
     my_painter  = &painter;
@@ -84,7 +154,7 @@ void Window::paintEvent(QPaintEvent *event)
 //    painter.fillRect(event->rect(), QBrush(Qt::white));
     painter.save();
     drawField(painter);
-    drawCar(painter);
+    drawCars(painter);
     painter.restore();
 
 }
@@ -99,7 +169,6 @@ void Window::keyPressEvent(QKeyEvent *event)
     qDebug() << "press " + text;
      qDebug("At least came here");
 }
-
 
 void Window::keyReleaseEvent(QKeyEvent *event)
 {
@@ -116,7 +185,7 @@ void Window::keyReleaseEvent(QKeyEvent *event)
 }
 
 void Window::define_the_direction_ofmoving(){
-    qInfo() << "try to determine current direction " << pressed_buttons;
+    //qInfo() << "try to determine current direction " << pressed_buttons;
     if (pressed_buttons.size() > 2){
         qDebug() << "press only on two or one buttons to correctly move";
     }
@@ -173,22 +242,29 @@ void Window::define_the_direction_ofmoving(){
     }
 }
 void Window::moveCar(){
-    qDebug() << "try to move car" << "current direction is "<< direction;
+//    qDebug() << "try to move car" << "current direction is "<< direction;
     define_the_direction_ofmoving();
     switch(direction){
     case 0:
             x +=  qCos(qDegreesToRadians(alpha)) * speed;
             y -= qSin(qDegreesToRadians(alpha)) * speed;
             alpha += alpha_step;
+            alpha_step += alpha_step_step;
+            alpha_step_step = alpha_step_step_scale;
             break;
         case 1:
             x +=  qCos(qDegreesToRadians(alpha)) * speed;
             y -= qSin(qDegreesToRadians(alpha)) * speed;
+            alpha += alpha_step;
+
             break;
         case 2:
             x +=  qCos(qDegreesToRadians(alpha)) * speed;
             y -= qSin(qDegreesToRadians(alpha)) * speed;
-            alpha -= alpha_step;
+            alpha += alpha_step;
+//            if ()
+            alpha_step += alpha_step_step;
+            alpha_step_step = -alpha_step_step_scale;
             break;
         case 3:
             x -=  qCos(qDegreesToRadians(alpha)) * speed;

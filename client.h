@@ -20,11 +20,13 @@ class Client : public QWidget
 
 public:
     friend class ConnectDialog;
+    friend class Window;
     Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent = 0);
     ~Client();
     Window* window;
 
 
+    void setPointer_to_UI(Window *window);
 private:
     QDialog* dialog;
     QString NickName;
@@ -45,6 +47,7 @@ private:
 //    void present_yourself();
     bool server_authenticate = false;
     QTimer* timer;
+    void CallUpdateUI(QString message);
 public slots:
 //    void slotSendToServer(int x, int y);
 
