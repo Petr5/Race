@@ -5,7 +5,7 @@
 #define CLIENT_H
 //#include "window.h"
 #include <QWidget>
-#include <QLocalSocket>
+#include <QTcpSocket>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QTimer>
@@ -21,7 +21,7 @@ class Client : public QWidget
 public:
     friend class ConnectDialog;
     friend class Window;
-    Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent = 0);
+    Client(QString serverName, int port, QDialog* dialog, QString NickName, QWidget* parent = 0);
     ~Client();
     Window* window;
 
@@ -30,8 +30,8 @@ public:
 private:
     QDialog* dialog;
     QString NickName;
-    // Указатель на QLocalSocket
-    QLocalSocket* localSocket;
+    // Указатель на QTcpSocket
+    QTcpSocket* localSocket;
 
     // Указатели на элементы интерфейса
     QTextEdit* textEdit;
@@ -57,7 +57,7 @@ private slots:
     void slotReadyRead();
 
     // Слот обработки ошибок сокета
-    void slotError(QLocalSocket::LocalSocketError error);
+    void slotError(QTcpSocket::SocketError error);
 
     // Слот передачи информации на сервер
 //    void slotSendToServer();

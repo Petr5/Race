@@ -8,21 +8,19 @@
 #include <QMessageBox>
 #include <QSignalMapper>
 
-Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* parent)
+Client::Client(QString serverName, int port, QDialog* dialog, QString NickName, QWidget* parent)
     : QWidget(parent), nextBlockSize(0), dialog(dialog), NickName(NickName)
     // Устанавливаем nextBlockSize равным нулю
 {
     // Инициализируем сокет
-    localSocket = new QLocalSocket(this);
+    localSocket = new QTcpSocket(this);
 
 //    QString serverName = "RaceServer";
     // Устанавливаем соединение между сигналом ошибки сокета с обработчиком ошибок
-    connect(localSocket, &QLocalSocket::errorOccurred, this, &Client::slotError);
+    connect(localSocket, &QTcpSocket::errorOccurred, this, &Client::slotError);
 
     localSocket->bytesToWrite();
     qInfo() << "server name " << serverName;
-    // Устанавливаем имя сервера, к которому сокет должен подключаться
-    localSocket->setServerName(serverName);
 
     // Устанавливаем соединение между сигналом подключения сокета к серверу
     // и обработчиком сигнала
@@ -41,7 +39,8 @@ Client::Client(QString serverName, QDialog* dialog, QString NickName, QWidget* p
     setLayout(layout);
 
     // Подключаем сокет к серверу
-    localSocket->connectToServer();
+//    localSocket->connectToServer();
+    localSocket->connectToHost(serverName, port);
 }
 
 Client::~Client()
@@ -91,14 +90,14 @@ void Client::slotReadyRead()
 }
 
 // Слот обработки ошибок сокета
-void Client::slotError(QLocalSocket::LocalSocketError error)
+void Client::slotError(QTcpSocket::SocketError error)
 {
     QString strError =
-        "Error: " + (error == QLocalSocket::ServerNotFoundError ?
+        "Error: " + (error == QTcpSocket::HostNotFoundError ?
                      "The server was not found." :
-                     error == QLocalSocket::PeerClosedError ?
+                     error == QTcpSocket::RemoteHostClosedError ?
                      "The server is closed." :
-                     error == QLocalSocket::ConnectionRefusedError ?
+                     error == QTcpSocket::ConnectionRefusedError ?
                      "The connection was refused." :
                      QString(localSocket->errorString()));
     textEdit->append(strError);

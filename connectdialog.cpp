@@ -12,8 +12,9 @@ ConnectDialog::ConnectDialog(QWidget *parent): QDialog(parent)
     button = new QPushButton(this);
 
     button->setText("Connect");
-    hostname->setText("RaceServer");
+    hostname->setText("127.0.0.1");
     NickName->setText("Ivan");
+    port->setText("3333");
     auto hostLabel = new QLabel(tr("&Server name:"));
     hostLabel->setBuddy(hostname);
     auto portLabel = new QLabel(tr("S&erver port:"));
@@ -34,7 +35,7 @@ ConnectDialog::ConnectDialog(QWidget *parent): QDialog(parent)
 
 void ConnectDialog::slotPushButtonClicked(){
 
-    client = new Client(hostname->text(), this, NickName->text());
+    client = new Client(hostname->text(),port->text().toInt(), this, NickName->text());
     client->NickName = NickName->text();
     client->show();
     Window *window = new Window(client);
