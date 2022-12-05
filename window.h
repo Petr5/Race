@@ -15,17 +15,22 @@ public slots:
 private slots:
     void moveCar();
 private:
+
+
     QPainterPath car;
     QPainterPath field;
     int width_road;
     int direction;
-    double x_step;
-    double y_step;
-    double x_skew_step;
-    double y_skew_step;
+
     double speed;
+    double step_speed;
+    double deceleration;
     double alpha;
     double alpha_step;
+    double alpha_step_step;
+    double alpha_step_step_scale;
+
+    bool vertical_collision = false;
     QList<QChar> pressed_buttons;
     void setCar();
     void drawCar(QPainter &painter);
