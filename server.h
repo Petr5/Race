@@ -32,6 +32,7 @@ private:
     static int cuurent_id_user;
     QList<QString> NickNames;
 //    QString NickName;
+    QList<QTcpSocket*> sockets_of_clients;
     QMap<QString, QList<double>> coordinates_of_players;
     QTcpServer *server;
     QStringList fortunes;
@@ -45,6 +46,7 @@ private:
 //    void initializeServerConstant();
     void sendPlayersPosition(QTcpSocket *localSocket, int nmb_packet);
 
+    bool Check_full_lobby();
 };
 
 

@@ -83,31 +83,35 @@ void Server::ReadClient(){
 
 void Server::slotNewConnection()
 {
-    // Получаем сокет, подключённый к серверу
+    qInfo() << "slot new connection triggered";
     QTcpSocket* localSocket = server->nextPendingConnection();
-    // Соединяем сигнал отключения сокета с обработчиком удаления сокета
+    sockets_of_clients.append(localSocket);
+    if (Check_full_lobby()){
+        foreach (QTcpSocket* sock, sockets_of_clients) {
+
+            sendToClient(sock, "250 All connected");
+        }
+    }
     connect(localSocket, SIGNAL(disconnected()), localSocket, SLOT(deleteLater()));
-    // Соединяем сигнал сокета о готовности передачи данных с обработчиком данных
     connect(localSocket, SIGNAL(readyRead()), this, SLOT(slotReadClient()));
-    // Отправляем информацию клиенту о соединении с сервером
     sendToClient(localSocket, "Server response: Connected!");
 }
 
-// Слот чтения информации от клиента
+bool Server::Check_full_lobby(){
+    if (sockets_of_clients.size() >= 1){
+        return true;
+    }
+    else return false;
+}
+
 void Server::slotReadClient()
 {
-    // Получаем QTcpSocket после срабатывания сигнала о готовности передачи данных
     QTcpSocket* localSocket = (QTcpSocket*)sender();
-//    localSocket->moveToThread(
-//    DataStrean stream = this.read.DataStream;
-    // Создаём входной поток получения данных на основе сокета
+
     QDataStream in(localSocket);
-    // Устанавливаем версию сериализации данных потока. У клиента и сервера они должны быть одинаковыми
     in.setVersion(QDataStream::Qt_5_3);
-    // Бесконечный цикл нужен для приёма блоков данных разных размеров, от двух байт и выше
     for(;;)
     {
-        // Если размер блока равен нулю
         if(!nextBlockSize)
         {
             // Если размер передаваемого блока меньше двух байт, выйти из цикла
@@ -117,22 +121,15 @@ void Server::slotReadClient()
             in >> nextBlockSize;
         }
 
-        // Извлекаем из потока время и строку
         QTime time;
         QString string;
         in >> time >> string;
-        //qInfo() << "aaept stering from client " << string;
 
         if (string != ""){
             qInfo() << "aaept stering from client " << string;
-//            //qInfo() << "after split " << string.split(" ");
             QString NickName = string.split(" ")[0];
             QString code = string.split(" ")[1];
-//            QString code = string.split(" ")[0];
 
-            //qDebug() << "server sent to client " << string;
-//            //qDebug() << "Nickname is " << NickName;
-            //qDebug() << "code of this message is " << code;
             if (code == "100"){
                 //qInfo() << "try Nickname for current user";
     //            NickNames = string.split(" ")[1];
