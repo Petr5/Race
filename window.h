@@ -4,6 +4,8 @@
 #include "qpainter.h"
 #include <QWidget>
 #include <QPainterPath>
+#include <QDateTime>
+//#include <QMatrix>
 class Window : public QWidget
 {
     Q_OBJECT
@@ -16,7 +18,7 @@ public:
     void CallDrawCars(QString message);
     QString NickName;
 
-    void drawCar(QPainter &painter);
+    void drawCar(QPainter &painter, double x, double y, double alpha);
 public slots:
 
 private slots:
@@ -26,6 +28,7 @@ public slots:
     void updateInformationForServer();
 private:
 
+
     QTimer* timer;
     QPainterPath car;
     QPainterPath field;
@@ -33,11 +36,22 @@ private:
     int direction;
 
     double speed;
+    double standard_step_speed;
+    double step_speed;
+    double standard_max_speed;
+    double max_speed;
+    double standard_declaration;
+    double deceleration;
     double alpha;
     double alpha_step;
     double alpha_step_step;
     double alpha_step_step_scale;
 
+    bool collision = false;
+    QList<int> blocked_direction;
+    QDateTime time_of_colision  = QDateTime::currentDateTime();;
+    bool shift_pressed = false;
+    bool space_pressed = false;
     QList<QChar> pressed_buttons;
     QMap<QString, QList<double>> coordinates_of_players;
 
@@ -50,6 +64,10 @@ private:
     void define_the_direction_ofmoving();
     void initialize_constant_of_moving();
 
+    void define_the_acceleration_of_speed();
+    void change_acceleration_of_speed();
+    void shift_speed_up();
+    void space_speed_down();
 protected:
     void keyPressEvent(QKeyEvent *event);
     double x = 0;

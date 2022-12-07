@@ -48,10 +48,14 @@ Client::~Client()
 
 }
 
-
+//void Client::setInteractor(class interactor* interactor){
+//    this->interactor = interactor;
+//}
 void Client::setPointer_to_UI(Window* window){
     this->window = window;
 }
+
+
 void Client::slotReadyRead()
 {
     // Всё аналогично приёму информации на стороне сервера
@@ -84,11 +88,22 @@ void Client::slotReadyRead()
             //qInfo() << "information about other players \n" << string;
             CallUpdateUI(string);
         }
+        else if (code == "250"){
+            qInfo() << "code 150 ack!!!!!!!!!!!";
+//            interactor;
+            start_the_game();
+//            startTimer()
+        }
         textEdit->append(time.toString() + " " + string);
         nextBlockSize = 0;
     }
 }
 
+
+//void Client::start_the_game(){
+//    Window *window = new Window(this);
+//    window->show();
+//}
 // Слот обработки ошибок сокета
 void Client::slotError(QTcpSocket::SocketError error)
 {

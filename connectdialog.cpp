@@ -38,8 +38,8 @@ void ConnectDialog::slotPushButtonClicked(){
     client = new Client(hostname->text(),port->text().toInt(), this, NickName->text());
     client->NickName = NickName->text();
     client->show();
+//    interactor* interactor = new class interactor(client);
     Window *window = new Window(client);
-    window->show();
 //    connect(client->localSocket, SIGNAL(connected()), this, SLOT(slotClientConnected()));
 
 }

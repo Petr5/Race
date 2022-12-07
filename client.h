@@ -4,16 +4,19 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 //#include "window.h"
+//#include "interactor.h"
 #include <QWidget>
 #include <QTcpSocket>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QTimer>
+
 //#ifndef WINDOW_H
 //#include "window.h"
 //#define WINDOW_H
 //#endif
 class Window;
+class interactor;
 class Client : public QWidget
 {
     Q_OBJECT
@@ -25,9 +28,10 @@ public:
     ~Client();
     Window* window;
 
-
+//    void setInteractor(class interactor *interactor);
     void setPointer_to_UI(Window *window);
 private:
+//    interactor* interactor;
     QDialog* dialog;
     QString NickName;
     // Указатель на QTcpSocket
@@ -40,14 +44,12 @@ private:
     // Размер принимаемого от сервера блока
     quint16 nextBlockSize;
 
-    // Номер ревизии, отправляемый серверу
-    // Увеличивается при каждом нажатии QPushButton
-    int revision;
     void SendToServer(QString command);
 //    void present_yourself();
     bool server_authenticate = false;
     QTimer* timer;
     void CallUpdateUI(QString message);
+    void start_the_game();
 public slots:
 //    void slotSendToServer(int x, int y);
 

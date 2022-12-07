@@ -3,6 +3,7 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QSignalMapper>
+
 Window::Window(Client * client)
 
 {
@@ -29,59 +30,60 @@ Window::Window(Client * client)
 }
 static int nmb_packet = -1;
 void Window::updateInformationForServer(){
-//    QSignalMapper* signalMapper_300 = new QSignalMapper (this) ;
-//    connect (timer,  SIGNAL(timeout()), signalMapper_300, SLOT(map())) ;
-//    qInfo() << "start update information on server";
-//    qInfo() << "sent to server " << QString("300 " + QString::number(x) + " " + QString::number(y));
-//    signalMapper_300 -> setMapping (timer, QString("300 " + QString::number(x) + " " + QString::number(y))) ;
-//    connect(signalMapper_300, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
-    ++nmb_packet;
-    qInfo() << "sent to server " + QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + "packet " + QString::number(nmb_packet);
-    client->SendToServer(QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + " packet " + QString::number(nmb_packet));
 
-//    QSignalMapper* signalMapper_200 = new QSignalMapper (this) ;
-//    connect (timer,  SIGNAL(timeout()), signalMapper_200, SLOT(map())) ;
-//    signalMapper_200 -> setMapping (timer, QString("200 ") + "packet " + QString::number(nmb_packet)) ;
-//    connect(signalMapper_200, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));
+    ++nmb_packet;
+    //qInfo() << "sent to server " + QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + "packet " + QString::number(nmb_packet);
+    client->SendToServer(QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + " packet " + QString::number(nmb_packet));
     client->SendToServer(QString("200 ") + "packet " + QString::number(nmb_packet));
 }
 void Client::CallUpdateUI(QString message){
-//    QSignalMapper* signalMapper_211 = new QSignalMapper (this) ;
-//    connect (timer,  SIGNAL(timeout()), signalMapper_200, SLOT(map())) ;
-//    signalMapper_211 -> setMapping (timer, QString("200")) ;
-//    connect(signalMapper_211, SIGNAL(mappedString(QString)), client, SLOT(slotSendToServer(QString)));/
-    //qInfo () << "mainwindow" << window;
 
     window->CallDrawCars(message);
 }
+void Client::start_the_game(){
+//   window = new Window(this);
+    window->show();
+}
 void Window::initialize_constant_of_moving(){
     speed = 0.5;
+    standard_step_speed = 0.05 * speed;
+    step_speed = standard_step_speed;
+    standard_max_speed = 3;
+    max_speed = standard_max_speed;
+    standard_declaration = 0.2 * standard_step_speed;
+    deceleration = standard_declaration;
     alpha = 0;
     alpha_step = 0;
     alpha_step_step = 0;
     alpha_step_step_scale = 0.3;
+
 }
 void Window::CallDrawCars(QString message){
-    //qInfo() << "callDrawCars message is " + message;
+    ////qInfo() << "callDrawCars message is " + message;
     int amount = message.split('\n')[0].split(" ")[1].toInt();
-    qInfo() << "amount of cars is " << amount;
-    qInfo() << "split message is " << message.split('\n');
+    //qInfo() << "amount of cars is " << amount;
+    //qInfo() << "split message is " << message.split('\n');
     for (int i = 1; i <= amount; ++i){
-        qInfo() << "i is " << i;
+        //qInfo() << "i is " << i;
 //        coordinates_of_players[message.split('\n')[i].split(" ")[0]] = qMakePair(message.split('\n')[i].split(" ")[1].toDouble(), message.split('\n')[i].split(" ")[2].toDouble());
         const QList<double> list = QList<double>({message.split('\n')[i].split(" ")[1].toDouble(), message.split('\n')[i].split(" ")[2].toDouble(), message.split('\n')[i].split(" ")[3].toDouble()});
-        qInfo() << "list is " << list;
+        //qInfo() << "list is " << list;
         coordinates_of_players.insert(message.split('\n')[i].split(" ")[0], list);
     }
-    qInfo() << "map on client is " << coordinates_of_players;
+    //qInfo() << "map on client is " << coordinates_of_players;
     update();
 }
 void Window::setCar()
 {
-    QPainterPath car;
-    car.addRoundedRect(0, 0,  2 * width_road / 3,  width_road / 3, 3, 3);
-    this->car = car;
-    update();
+    this->car = *new QPainterPath();
+//    QRect rect = QRect(x + 20, y + 20,  40,  20);
+    QRect rect = QRect(0, 0,  40,  20);
+
+    car.addRect(rect);
+
+     QTransform* t = new QTransform;
+    t->translate(width_road / 3 + x, width_road / 3 + y).rotate( -alpha );
+    car = t->map(car);
 }
 
 void Window::setField()
@@ -89,36 +91,46 @@ void Window::setField()
     QPainterPath roundRectPath;
     center_y_window = size().height() / 2;
     center_x_window = size().width() / 2;
-//    //qInfo() << "try to set field";
+//    ////qInfo() << "try to set field";
     roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
-    roundRectPath.addRoundedRect(width_road, width_road, 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
+    roundRectPath.addRoundedRect(width_road * 3, width_road * 3, 2 * center_x_window - 6 * width_road, 2 * center_y_window - 6 * width_road,30,30);
     this->field = roundRectPath;
     update();
 }
 
 void Window::drawCars(QPainter &painter)
 {
-    qInfo() << "size of map of clients on client " << coordinates_of_players.size();
-    qInfo() << "map is " << coordinates_of_players;
+//    //qInfo() << "size of map of clients on client " << coordinates_of_players.size();
+//    //qInfo() << "map is " << coordinates_of_players;
     for (auto it = coordinates_of_players.begin(); it != coordinates_of_players.end(); ++it){
         double x = it.value()[0];
         double y = it.value()[1];
         double alpha = it.value()[2];
-        qInfo() << "values frmo the server are x " << x << " y " << y << " z " << alpha;
-        qInfo() << "nickname on the server is " << it.key() << " while on the client " << NickName;
+//        //qInfo() << "values frmo the server are x " << x << " y " << y << " z " << alpha;
+//        //qInfo() << "nickname on the server is " << it.key() << " while on the client " << NickName;
         if(it.key() == NickName){
-            qInfo() << "nickname on the server and client IS THE SAME!!!!!!!!!!!!!!!!!!!!!";
-            x_server = it.value()[0];
-            y_server = it.value()[1];
-            this->alpha = alpha;
+//            //qInfo() << "nickname on the server and client IS THE SAME!!!!!!!!!!!!!!!!!!!!!";
+//            x_server = it.value()[0];
+//            y_server = it.value()[1];
+//            this->alpha = alpha;
+
+//            painter.resetTransform();
+//            painter.translate(width_road / 3 + x, width_road / 3 + y);
+//            painter.rotate(-alpha);
+//            if (collision) painter.fillPath(car, Qt::red);
+//            else painter.fillPath(car, Qt::blue);
+              drawCar(painter, x, y, alpha);
         }
+        else{
+//            painter.resetTransform();
+//            painter.translate(width_road / 3 + x, width_road / 3 + y);
+//            painter.rotate(-alpha);
+//            painter.fillPath(car, Qt::blue);
+            drawCar(painter, x, y, alpha);
+        }
+//        //qInfo() << it.key() << " x y from server " << x << y << " while client x y are " << this->x << " " << this->y;
 
-//        qInfo() << it.key() << " x y from server " << x << y << " while client x y are " << this->x << " " << this->y;
 
-        painter.resetTransform();
-        painter.translate(width_road / 3 + x, width_road / 3 + y);
-        painter.rotate(-alpha);
-        painter.fillPath(car, Qt::blue);
     }
 
 }
@@ -127,12 +139,29 @@ void Window::synchronizeClientWithServer(){
     y = y_server;
 }
 
-void Window::drawCar(QPainter &painter)
+void Window::drawCar(QPainter &painter, double x, double y, double alpha)
 {
+    setCar();
+//    painter.resetTransform();
+//    QTransform* t = new QTransform;
+//    t->translate(x, y).rotate( -alpha ).translate(-x, -y);
+//    car = t->map(car);
+    painter.drawPath(car);
+
     painter.resetTransform();
-    painter.translate(width_road / 3 + this->x, width_road / 3 + this->y);
+    painter.translate(width_road / 3 + x, width_road / 3 + y);
     painter.rotate(-alpha);
-    painter.fillPath(car, Qt::blue);
+    QImage image ("/home/peter/Race/car2.png");
+    image = image.scaled(40,20);
+//    QMatrix rot;
+//    rot.rotate(90);
+//    QImage out = image.transformed(rot);
+//    image.tra
+    painter.drawImage(0, 0, image);
+//    painter.drawPath(car);
+//    painter.fillPath(car, Qt::blue);
+
+
 }
 void Window::drawField(QPainter &painter)
 {
@@ -143,15 +172,62 @@ void Window::drawField(QPainter &painter)
 }
 void Window::paintEvent(QPaintEvent *event)
 {
-        qInfo() << "paintevent starts";
-//    //qInfo() << "window size now is " << size();
-//    //qInfo() << "height is " << size().height();
-
     QPainter painter(this);
-    my_painter  = &painter;
-//    qDebug() << my_painter;
-    painter.setRenderHint(QPainter::Antialiasing);
-//    painter.fillRect(event->rect(), QBrush(Qt::white));
+
+//    double width = 40;
+//    double height = 20;
+//    double diagonal = qSqrt(width * width + height * height);
+//    painter.drawPoint(QPoint(x, y));
+//    painter.drawPoint(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ));
+//    painter.drawPoint(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90))));
+//    painter.drawPoint(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha))));
+//    painter.drawPoint()
+//    if (!field.contains(QPoint(x, y)) || !field.contains(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90))))){
+//        blocked_direction = {3, 4, 5};
+
+//        qInfo() << "blocked direction are " << blocked_direction;
+//    }
+//    else if (!field.contains(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha)))) || !field.contains(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ))){
+//        blocked_direction = {0, 1, 2};
+//        qInfo() << "blocked direction are " << blocked_direction;
+//    }
+//    else{
+//        blocked_direction.clear();
+//    }
+//        qInfo() << "now " << "topRight  " << QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ) << " topLeft contains " << field.contains(rotatedRect.topLeft()) << "bottom right contains " << field.contains(rotatedRect.bottomRight()) ;
+
+//    qInfo() << "now " << "topRight contains " << field.contains(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) )) \
+//            << " topLeft contains " << field.contains(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha))))
+//            << "bottom right contains " << field.contains(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90)))) ;
+//    field.intersected()
+
+    if (!collision){
+        qInfo() << "after last collision " << time_of_colision.msecsTo(QDateTime::currentDateTime()) ;
+        if (field.intersects(car) && !field.contains(car) && time_of_colision.msecsTo(QDateTime::currentDateTime()) > 5000){
+            collision = true;
+            speed = 0;
+            alpha_step = 0;
+            time_of_colision = QDateTime::currentDateTime();
+            if (direction == 0 || direction == 1 || direction == 2  ){
+                blocked_direction = {0,1,2};
+            }
+
+            else blocked_direction = {3,4,5};
+        }
+        else {
+            collision = false;
+            blocked_direction.clear();
+        }
+
+    }
+    else{
+        if(!blocked_direction.contains(direction)) collision = false;
+
+    }
+
+
+//    painter.setRenderHint(QPainter::Antialiasing);
+//    painter.fillRect(event->rect(), QBrush(Qt::white)
     painter.save();
     drawField(painter);
     drawCars(painter);
@@ -159,33 +235,65 @@ void Window::paintEvent(QPaintEvent *event)
 
 }
 
-
 void Window::keyPressEvent(QKeyEvent *event)
 {
-    qDebug("At least came here");
+    if (event->modifiers() == Qt::ShiftModifier){
+        shift_pressed = true;
+        qInfo() << "shift pressed";
+    }
 
-    QString text = event->text();
-    pressed_buttons.append(text[0]);
-    qDebug() << "press " + text;
-     qDebug("At least came here");
+//    else{
+        //qInfo() << "pressed buttons " << pressed_buttons;
+        QString text = event->text();
+
+        if (text != ""){
+            if (text[text.size() - 1] == ' '){
+//                qDebug() << "press " + text;
+                space_pressed = true;
+            }
+            else{
+//                qDebug() << "press " + text;
+                pressed_buttons.append(text[0].toLower());
+            }
+        }
+
+//    }
+
 }
 
 void Window::keyReleaseEvent(QKeyEvent *event)
 {
-    qDebug("At least came here 2");
 
-    QString text = event->text();
-    int i = 0;
-    while (i < pressed_buttons.size()){
-        if (pressed_buttons[i] == text[0]) pressed_buttons.erase(pressed_buttons.begin() + i);
-        else ++i;
+    if (event->modifiers() == Qt::ShiftModifier ){
+//        qInfo() << "release shift";
+        shift_pressed = false;
+//        qInfo() << "now pressed_buttons is " << pressed_buttons;
     }
+//    else{
+        QString text = event->text();
+        if (text != ""){
+            if (text[text.size() - 1] == ' '){
+                space_pressed = false;
+            }
+            else{
+//                qInfo() << "at least came here";
+//                qInfo() << "event->text() release now is " << text;
+                int i = 0;
+                while (i < pressed_buttons.size()){
+                    if (pressed_buttons[i] == text[0].toLower()) pressed_buttons.erase(pressed_buttons.begin() + i);
+                    else ++i;
+                }
+//                qInfo() << "at least came here 2";
+            }
+        }
 
-    qDebug() << "release " + text;
+//        qDebug() << "release " + text;
+//    }
+
 }
 
 void Window::define_the_direction_ofmoving(){
-    //qInfo() << "try to determine current direction " << pressed_buttons;
+    ////qInfo() << "try to determine current direction " << pressed_buttons;
     if (pressed_buttons.size() > 2){
         qDebug() << "press only on two or one buttons to correctly move";
     }
@@ -241,48 +349,140 @@ void Window::define_the_direction_ofmoving(){
         direction = 1;
     }
 }
+void Window::change_acceleration_of_speed(){
+    if (pressed_buttons.contains('w')) {
+        if (speed < max_speed)
+        speed += step_speed;
+    }
+    else if (pressed_buttons.contains('s')){
+        if (speed > -max_speed)
+        speed += -step_speed;
+    }
+
+    else
+    {
+        if (speed > 0){
+            speed -= deceleration;
+        }
+    }
+}
+
+void Window::space_speed_down(){
+    if (space_pressed) {
+        deceleration = 2 * standard_declaration;
+    }
+    else {
+        deceleration = standard_declaration;
+    }
+}
+
+void Window::shift_speed_up(){
+    if (shift_pressed) {
+        step_speed = 2 * standard_step_speed;
+        max_speed = 2 * standard_max_speed;
+    }
+    else {
+        step_speed = standard_step_speed;
+        max_speed = standard_max_speed;
+    }
+}
+
 void Window::moveCar(){
 //    qDebug() << "try to move car" << "current direction is "<< direction;
+    shift_speed_up();
+    space_speed_down();
     define_the_direction_ofmoving();
-    switch(direction){
-    case 0:
-            x +=  qCos(qDegreesToRadians(alpha)) * speed;
-            y -= qSin(qDegreesToRadians(alpha)) * speed;
-            alpha += alpha_step;
-            alpha_step += alpha_step_step;
-            alpha_step_step = alpha_step_step_scale;
-            break;
-        case 1:
-            x +=  qCos(qDegreesToRadians(alpha)) * speed;
-            y -= qSin(qDegreesToRadians(alpha)) * speed;
-            alpha += alpha_step;
-
-            break;
-        case 2:
-            x +=  qCos(qDegreesToRadians(alpha)) * speed;
-            y -= qSin(qDegreesToRadians(alpha)) * speed;
-            alpha += alpha_step;
-//            if ()
-            alpha_step += alpha_step_step;
-            alpha_step_step = -alpha_step_step_scale;
-            break;
-        case 3:
-            x -=  qCos(qDegreesToRadians(alpha)) * speed;
-            y += qSin(qDegreesToRadians(alpha)) * speed;
-            alpha -= alpha_step;
-            break;
-        case 4:
-            x -=  qCos(qDegreesToRadians(alpha)) * speed;
-            y += qSin(qDegreesToRadians(alpha)) * speed;
-            break;
-        case 5:
-            x -=  qCos(qDegreesToRadians(alpha)) * speed;
-            y += qSin(qDegreesToRadians(alpha)) * speed;
-            alpha += alpha_step;
-            break;
-        default:
-            ;
+    change_acceleration_of_speed();
+    qInfo() << "current speed is " << speed;
+    if (collision && blocked_direction.contains(direction)){
+        qInfo() << "car blocked";
+        qInfo() << "blocked direction are " << blocked_direction;
+    ;
     }
+    else{
+        qInfo() << "try move";
+        switch(direction){
+            case 0:
+                if (speed < 0){
+                    x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                }
+                else{
+
+                    x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = alpha_step_step_scale;
+                }
+
+                break;
+            case 1:
+                if (speed < 0){
+                    x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                }
+                else{
+                    x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                }
+                break;
+            case 2:
+                x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                alpha += alpha_step;
+    //            if ()
+                alpha_step += alpha_step_step;
+                alpha_step_step = -alpha_step_step_scale;
+                break;
+            case 3:
+            if (speed > 0){
+                x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                alpha += alpha_step;
+                alpha_step += alpha_step_step;
+                alpha_step_step = +alpha_step_step_scale * 0.2;
+            }
+            else{
+                x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                alpha -= alpha_step;
+            }
+                break;
+            case 4:
+                if (speed > 0){
+                    x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+//                    alpha += alpha_step;
+                }
+                else{
+                    x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                }
+            break;
+            case 5:
+                if (speed > 0){
+                    x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = -alpha_step_step_scale * 0.2;
+                }
+                else{
+                    x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                }
+                break;
+            default:
+                ;
+        }
+    }
+
 
     update();
 }

@@ -6,9 +6,11 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
+#include "interactor.h"
 
 #include "client.h"
 
+class interactor;
 
 class ConnectDialog: public QDialog
 {
