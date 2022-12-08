@@ -336,10 +336,12 @@ void Window::define_the_direction_ofmoving(){
             direction = 4;
         }
         else if (signal == "a"){
-            direction = 0;
+            if (speed < 0) direction = 3;
+            else direction = 0;
         }
         else if (signal == "d"){
-            direction = 2;
+            if (speed < 0) direction =5;
+            else direction = 2;
         }
         else{
             qDebug() << "error: "  << "something went wrong" << "direction no in set from 0 to 5";
@@ -407,6 +409,8 @@ void Window::moveCar(){
                     x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
                     y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
                     alpha += alpha_step;
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = alpha_step_step_scale;
                 }
                 else{
 
@@ -431,12 +435,22 @@ void Window::moveCar(){
                 }
                 break;
             case 2:
-                x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
-                y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
-                alpha += alpha_step;
-    //            if ()
-                alpha_step += alpha_step_step;
-                alpha_step_step = -alpha_step_step_scale;
+                if (speed < 0){
+                    x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = -alpha_step_step_scale;
+                }
+
+                else{
+                    x +=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
+                    y -= qSin(qDegreesToRadians(alpha)) * qAbs(speed);
+                    alpha += alpha_step;
+        //            if ()
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = -alpha_step_step_scale;
+                }
                 break;
             case 3:
             if (speed > 0){
@@ -449,7 +463,9 @@ void Window::moveCar(){
             else{
                 x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
                 y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
-                alpha -= alpha_step;
+                alpha += alpha_step;
+                alpha_step += alpha_step_step;
+                alpha_step_step = alpha_step_step_scale;
             }
                 break;
             case 4:
@@ -476,6 +492,8 @@ void Window::moveCar(){
                     x -=  qCos(qDegreesToRadians(alpha)) * qAbs(speed);
                     y += qSin(qDegreesToRadians(alpha)) * qAbs(speed);
                     alpha += alpha_step;
+                    alpha_step += alpha_step_step;
+                    alpha_step_step = -alpha_step_step_scale;
                 }
                 break;
             default:
