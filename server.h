@@ -34,6 +34,7 @@ private:
 //    QString NickName;
     QList<QTcpSocket*> sockets_of_clients;
     QMap<QString, QList<double>> coordinates_of_players;
+    QMap<QString, QList<double>> time_of_visiting_control_points;
     QTcpServer *server;
     QStringList fortunes;
     QLabel *statusLabel;
@@ -47,6 +48,7 @@ private:
     void sendPlayersPosition(QTcpSocket *localSocket, int nmb_packet);
 
     bool Check_full_lobby();
+    void sendPlayersTimeVisitedCPoints(QTcpSocket *localSocket, int nmb_packet);
 };
 
 

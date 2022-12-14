@@ -59,7 +59,6 @@ Server::Server(QWidget *parent)
 }
 
 
-
 //void Server::initializeServerConstant(){
 //    Server::cuurent_id_user = 0;
 //}
@@ -85,6 +84,7 @@ void Server::slotNewConnection()
 {
     qInfo() << "slot new connection triggered";
     QTcpSocket* localSocket = server->nextPendingConnection();
+
     sockets_of_clients.append(localSocket);
     if (Check_full_lobby()){
         foreach (QTcpSocket* sock, sockets_of_clients) {
@@ -145,6 +145,7 @@ void Server::slotReadClient()
             else if (code == "200"){
                 ;
                 sendPlayersPosition(localSocket, string.split(" ")[3].toInt());
+                sendPlayersTimeVisitedCPoints(localSocket, string.split(" ")[3].toInt());
             }
             else if (code == "300"){
 //                coordinates_of_players[NickName] = qMakePair(string.split(" ")[2].toInt(), string.split(" ")[3].toInt());
@@ -155,6 +156,18 @@ void Server::slotReadClient()
                 coordinates_of_players.insert(NickName, list);
                 qInfo() << "now coordinates_of_players are " << coordinates_of_players;
                 ;
+            }
+            else if(code == "400"){
+                qInfo() << "400 accept " << string;
+                int cnt = string.split(" ")[2].toInt();
+                QList<double> list;
+                for (int i = 3; i < 3 + cnt; ++i){
+                    list.append(string.split(" ")[i].toDouble());
+                }
+//                const QList<double> list = QList<double>({string.split(" ")[2].toDouble(), string.split(" ")[3].toDouble(), string.split(" ")[4].toDouble()});
+                qInfo() << list;
+                time_of_visiting_control_points[NickName] = list;
+                qInfo() << "now time_of_visiting_control_points for " + NickName + "is " << time_of_visiting_control_points[NickName];
             }
             else{
 //                QMessageBox::critical(this, "unknown code", code);
@@ -226,6 +239,21 @@ void Server::sendPlayersPosition(QTcpSocket* localSocket, int nmb_packet){
     QString message = "211 " + QString::number(coordinates_of_players.size()) + '\n';
     for (auto it = coordinates_of_players.begin(); it != coordinates_of_players.end(); ++it){
         message += it.key() + " " + QString::number(it.value()[0]) + " " + QString::number(it.value()[1]) + " " + QString::number(it.value()[2]) + '\n';
+    }
+    message += "nmb_packet is " + QString::number(nmb_packet);
+    sendToClient(localSocket, message);
+}
+
+void Server::sendPlayersTimeVisitedCPoints(QTcpSocket* localSocket, int nmb_packet){
+    QString message = "411 " + QString::number(time_of_visiting_control_points.size()) + '\n';
+    for (auto it = time_of_visiting_control_points.begin(); it != time_of_visiting_control_points.end(); ++it){
+        QList<double> visited_points = it.value();
+        int cnt_visited_control_points = visited_points.size();
+        message += it.key();
+        for (int i = 0; i < cnt_visited_control_points; ++i){
+            message +=  " " + QString::number(visited_points[i]);
+        }
+        message += '\n';
     }
     message += "nmb_packet is " + QString::number(nmb_packet);
     sendToClient(localSocket, message);
