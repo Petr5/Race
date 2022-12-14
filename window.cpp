@@ -3,6 +3,7 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QSignalMapper>
+#include <QSoundEffect>
 
 Window::Window(Client * client)
 
@@ -10,7 +11,7 @@ Window::Window(Client * client)
     this->client = client;
     NickName = client->NickName;
     client->setPointer_to_UI(this);
-    width_road = 60;
+    width_road = 180;
     setCar();
     setField();
     initialize_constant_of_moving();
@@ -27,6 +28,16 @@ Window::Window(Client * client)
 //    QTimer* synchronize = new QTimer();
 //    connect(synchronize, SIGNAL(timeout()), this, SLOT(synchronizeClientWithServer()));
 //    synchronize->start(5000);
+
+    QTimer* chechk_control_points = new QTimer();
+
+    connect(chechk_control_points, SIGNAL(timeout()), this, SLOT(checkControlPoints()));
+
+    connect(chechk_control_points, SIGNAL(timeout()), this, SLOT(PrintCurrentrating()));
+    chechk_control_points->start(50);
+
+
+    setSoundEffect();
 }
 static int nmb_packet = -1;
 void Window::updateInformationForServer(){
@@ -35,14 +46,26 @@ void Window::updateInformationForServer(){
     //qInfo() << "sent to server " + QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + "packet " + QString::number(nmb_packet);
     client->SendToServer(QString("300 " + QString::number(x) + " " + QString::number(y) + " " + QString::number(alpha)) + " packet " + QString::number(nmb_packet));
     client->SendToServer(QString("200 ") + "packet " + QString::number(nmb_packet));
+    QString time_intersect_update = "400 ";
+    int nmb_visited_points = id_point_to_his_timestamps.size();
+    time_intersect_update += QString::number(nmb_visited_points);
+    for (int i =0; i < id_point_to_his_timestamps.size(); ++i){
+        time_intersect_update.append(" " + QString::number(id_point_to_his_timestamps[i][id_point_to_his_timestamps[i].size() - 1]) );
+    }
+    client->SendToServer(time_intersect_update + " packet " + QString::number(nmb_packet));
 }
 void Client::CallUpdateUI(QString message){
 
     window->CallDrawCars(message);
 }
+void Client::CallUpdateTimeStamp(QString message){
+
+    window->CallPrintStatistics(message);
+}
 void Client::start_the_game(){
 //   window = new Window(this);
     window->show();
+    window->time_of_start_game = QDateTime::currentDateTime();
 }
 void Window::initialize_constant_of_moving(){
     speed = 0.5;
@@ -88,14 +111,39 @@ void Window::setCar()
 
 void Window::setField()
 {
+    bool need_to_change_points = false;
     QPainterPath roundRectPath;
-    center_y_window = size().height() / 2;
-    center_x_window = size().width() / 2;
+    double x_window = size().width();
+    if (x_window /2 != center_x_window) {
+        need_to_change_points = true;
+        qInfo() << "nedd to change points!!!";
+    }
+    double y_window = size().height();
+    center_y_window = y_window / 2;
+    center_x_window = x_window / 2;
 //    ////qInfo() << "try to set field";
     roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
-    roundRectPath.addRoundedRect(width_road * 3, width_road * 3, 2 * center_x_window - 6 * width_road, 2 * center_y_window - 6 * width_road,30,30);
+    roundRectPath.addRoundedRect(width_road , width_road , 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
+    double size_of_control_points = width_road / 2;
+    if (need_to_change_points) setControlPoints({{width_road / 4, width_road / 4, size_of_control_points, size_of_control_points}, {x_window - width_road ,  width_road / 4, size_of_control_points, size_of_control_points},
+                      {x_window - width_road, y_window - width_road, size_of_control_points, size_of_control_points}, {width_road / 4, y_window - width_road , size_of_control_points, size_of_control_points}});
+    need_to_change_points = false;
     this->field = roundRectPath;
     update();
+}
+
+void Window::setControlPoints(QList<QList<double>> control_points){
+//    this->control_points = control_points;
+    qInfo()  <<"called setControlPoints";
+    nmb_of_contral_points = control_points.size();
+    qInfo() << "control points are " << control_points;
+    foreach (QList<double> point, control_points) {
+        QRect rect = QRect(point[0], point[1], point[2], point[3]);
+        QPainterPath path;
+        path.addRect(rect);
+        this->control_points.append(path);
+    }
+
 }
 
 void Window::drawCars(QPainter &painter)
@@ -134,6 +182,7 @@ void Window::drawCars(QPainter &painter)
     }
 
 }
+//void Window::
 void Window::synchronizeClientWithServer(){
     x = x_server;
     y = y_server;
@@ -163,6 +212,138 @@ void Window::drawCar(QPainter &painter, double x, double y, double alpha)
 
 
 }
+void Window::drawControlPoint(QPainter &painter, QPainterPath path){
+    painter.resetTransform();
+    painter.drawPath(path);
+}
+void Window::drawControlPoints(QPainter &painter){
+    foreach (QPainterPath path, control_points) {
+        drawControlPoint(painter, path);
+    }
+}
+
+void Window::checkControlPoints(){
+//    qInfo() << "try check control points";
+//    qInfo() << "control_points size " << control_points.size();
+    int id = 0;
+    foreach (QPainterPath path, control_points) {
+        if (path.intersects(car) && !path.contains(car)){
+//            time_of_intersection_control_points.append(time_of_start_game.secsTo(QDateTime::currentDateTime()));
+//            qInfo() << "id now " << id;
+//            if (id < nmb_of_contral_points - 1) qInfo() << "nmb visits are " << id_to_numbs_visit_point[id] << " " << id_to_numbs_visit_point[id + 1];
+//            else qInfo() << "nmb visits are " << id_to_numbs_visit_point[id - 1] << " " << id_to_numbs_visit_point[id];
+            if (id < nmb_of_contral_points - 1){
+                if (id_to_numbs_visit_point[id] > id_to_numbs_visit_point[id + 1]){
+                   ;
+                }
+                else{
+                    id_point_to_his_timestamps[id].append(time_of_start_game.secsTo(QDateTime::currentDateTime()));
+                    ++id_to_numbs_visit_point[id];
+                }
+            }
+            else if (id == nmb_of_contral_points - 1){
+                if (id_to_numbs_visit_point[id] == id_to_numbs_visit_point[id - 1])
+                    ;
+                else{
+                    id_point_to_his_timestamps[id].append(time_of_start_game.secsTo(QDateTime::currentDateTime()));
+                    ++id_to_numbs_visit_point[id];
+                }
+            }
+            else{
+                qInfo() << "smth went wrong! Need to fix";
+            }
+        }
+        ++id;
+    }
+}
+void Window::PrintStatistics(QPainter &painter){
+//    qInfo() << "try to print statistic";
+//    qInfo() << "time_of_visiting_control_points is " << time_of_visiting_control_points;
+    QString statistic = "Name   ";
+    statistic.append("\n");
+    for (int i = 0; i < nmb_of_contral_points; ++i){
+        statistic.append(" " + QString::number(i));
+    }
+    statistic.append("\n");
+
+
+    double size_of_text = 2 * width_road /3;
+    QFont font = painter.font() ;
+
+    /* twice the size than the current font size */
+    font.setPointSize(3 * font.pointSize() /4);
+
+    /* set the modified font to the painter */
+    painter.setFont(font);
+    double distance_between_rows_in_table = size_of_text /5;
+    painter.drawText(center_x_window - size_of_text, center_y_window- distance_between_rows_in_table, statistic);
+
+    int j = 0;
+    for (auto it = time_of_visiting_control_points.begin(); it != time_of_visiting_control_points.end(); ++it){
+        QString NickName = it.key();
+        QString statistic2;
+        statistic2.append(NickName);
+        QList<double> timestamps = it.value();
+        for (int i = 0; i < timestamps.size(); ++i){
+            statistic2.append(" " + QString::number(timestamps[i]));
+        }
+        painter.drawText(center_x_window - size_of_text, center_y_window + j * distance_between_rows_in_table, statistic2);
+        ++j;
+    }
+
+
+
+}
+void Window::CallPrintStatistics(QString message){
+//    qInfo() << "called CallPrintStatistics with message" << Qt::endl << message;
+    int amount = message.split('\n')[0].split(" ")[1].toInt();
+    for (int i = 1; i <= amount; ++i){
+        //qInfo() << "i is " << i;
+        QStringList row = message.split('\n')[i].split(" ");
+//        qInfo() << "curr row is " << row;
+        int amount_timestamp = row.size() - 1;
+        QList<double> list;
+        for (int j = 1; j < amount_timestamp + 1; ++j){
+//            qInfo() << "list now " << list;
+            list.append(row[j].toDouble());
+        }
+        time_of_visiting_control_points[row[0]] = list;
+//        const QList<double> list = QList<double>({message.split('\n')[i].split(" ")[1].toDouble(), message.split('\n')[i].split(" ")[2].toDouble(), message.split('\n')[i].split(" ")[3].toDouble()});
+        //qInfo() << "list is " << list;
+    }
+}
+void Window::fill_road(QPainter &painter){
+//    roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
+//    roundRectPath.addRoundedRect(width_road , width_road , 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
+    QImage image("/home/peter/Race/road.jpeg");
+//    double
+    image.scaled(width_road, width_road);
+    for (int i = 0; i < center_x_window / width_road; ++i){
+        painter.drawImage(i * width_road, 0, image);
+
+    }
+    double step = width_road / 6;
+    int nmb_step = center_x_window / step;
+    double alpha = 0;
+    double alpha_step = 90 / nmb_step;
+    for (int i = 0; i < nmb_step; ++i){
+        painter.resetTransform();
+        painter.translate(center_x_window + i * step, 0);
+
+        painter.rotate(alpha);
+        painter.drawImage(0, 0, image);
+        alpha += alpha_step;
+
+    }
+//    painter.drawImage(0, 0, image);
+//    painter.drawImage(center_x_window, 0, image);
+
+
+}
+void Window::PrintCurrentrating(){
+
+//    qInfo() << "current time points are " << id_point_to_his_timestamps;
+}
 void Window::drawField(QPainter &painter)
 {
     setField();
@@ -173,36 +354,10 @@ void Window::drawField(QPainter &painter)
 void Window::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-
-//    double width = 40;
-//    double height = 20;
-//    double diagonal = qSqrt(width * width + height * height);
-//    painter.drawPoint(QPoint(x, y));
-//    painter.drawPoint(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ));
-//    painter.drawPoint(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90))));
-//    painter.drawPoint(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha))));
-//    painter.drawPoint()
-//    if (!field.contains(QPoint(x, y)) || !field.contains(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90))))){
-//        blocked_direction = {3, 4, 5};
-
-//        qInfo() << "blocked direction are " << blocked_direction;
-//    }
-//    else if (!field.contains(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha)))) || !field.contains(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ))){
-//        blocked_direction = {0, 1, 2};
-//        qInfo() << "blocked direction are " << blocked_direction;
-//    }
-//    else{
-//        blocked_direction.clear();
-//    }
-//        qInfo() << "now " << "topRight  " << QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) ) << " topLeft contains " << field.contains(rotatedRect.topLeft()) << "bottom right contains " << field.contains(rotatedRect.bottomRight()) ;
-
-//    qInfo() << "now " << "topRight contains " << field.contains(QPoint(x + diagonal * qCos(qDegreesToRadians(alpha) + qAtan2(height, width)), x + diagonal * qSin(qDegreesToRadians(alpha) + qAtan2(height, width)) )) \
-//            << " topLeft contains " << field.contains(QPoint(x + width * qCos(qDegreesToRadians(alpha)), y + qSin(qDegreesToRadians(alpha))))
-//            << "bottom right contains " << field.contains(QPoint(x + height * qCos(qDegreesToRadians(alpha + 90)), x + height * qSin(qDegreesToRadians(alpha + 90)))) ;
-//    field.intersected()
+    setField();
 
     if (!collision){
-        qInfo() << "after last collision " << time_of_colision.msecsTo(QDateTime::currentDateTime()) ;
+//        qInfo() << "after last collision " << time_of_colision.msecsTo(QDateTime::currentDateTime()) ;
         if (field.intersects(car) && !field.contains(car) && time_of_colision.msecsTo(QDateTime::currentDateTime()) > 5000){
             collision = true;
             speed = 0;
@@ -230,14 +385,18 @@ void Window::paintEvent(QPaintEvent *event)
 //    painter.fillRect(event->rect(), QBrush(Qt::white)
     painter.save();
     drawField(painter);
+//    fill_road(painter);
     drawCars(painter);
+    drawControlPoints(painter);
+    PrintStatistics(painter);
     painter.restore();
 
 }
 
 void Window::keyPressEvent(QKeyEvent *event)
 {
-    if (event->modifiers() == Qt::ShiftModifier){
+//    shift_pressed = false;
+    if (event->modifiers() == Qt::ShiftModifier && !event->isAutoRepeat()){
         shift_pressed = true;
         qInfo() << "shift pressed";
     }
@@ -378,14 +537,34 @@ void Window::space_speed_down(){
     }
 }
 
+bool need_to_play_sound = true;
+
+void Window::setSoundEffect(){
+    effect = new QSoundEffect();
+    effect->setSource(QUrl::fromLocalFile("/home/peter/Race/mixkit-fast-car-drive-by-1538.wav"));
+    effect->setLoopCount(QSoundEffect::Infinite);
+    effect->setVolume(0.25f);
+}
 void Window::shift_speed_up(){
     if (shift_pressed) {
+        qInfo() << "called speed up " << "shift pressed " << shift_pressed;
         step_speed = 2 * standard_step_speed;
         max_speed = 2 * standard_max_speed;
+
+//        if (need_to_play_sound) {
+////            effect->setLoopCount(QSoundEffect::Infinite);
+//            effect->play();
+//            need_to_play_sound = false;
+//        }
     }
     else {
         step_speed = standard_step_speed;
         max_speed = standard_max_speed;
+//        if (!need_to_play_sound){
+////            effect->stop();
+////            effect->setLoopCount(0);
+//            need_to_play_sound = true;
+//        }
     }
 }
 
@@ -397,12 +576,12 @@ void Window::moveCar(){
     change_acceleration_of_speed();
     qInfo() << "current speed is " << speed;
     if (collision && blocked_direction.contains(direction)){
-        qInfo() << "car blocked";
-        qInfo() << "blocked direction are " << blocked_direction;
+//        qInfo() << "car blocked";
+//        qInfo() << "blocked direction are " << blocked_direction;
     ;
     }
     else{
-        qInfo() << "try move";
+//        qInfo() << "try move";
         switch(direction){
             case 0:
                 if (speed < 0){

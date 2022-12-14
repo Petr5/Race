@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QPainterPath>
 #include <QDateTime>
+#include <QSoundEffect>
 //#include <QMatrix>
 class Window : public QWidget
 {
@@ -19,6 +20,7 @@ public:
     QString NickName;
 
     void drawCar(QPainter &painter, double x, double y, double alpha);
+    QDateTime time_of_start_game;
 public slots:
 
 private slots:
@@ -26,13 +28,15 @@ private slots:
     void synchronizeClientWithServer();
 public slots:
     void updateInformationForServer();
+    void PrintCurrentrating();
+    void checkControlPoints();
 private:
-
+    QSoundEffect* effect;
 
     QTimer* timer;
     QPainterPath car;
     QPainterPath field;
-    int width_road;
+    double width_road;
     int direction;
 
     double speed;
@@ -54,6 +58,16 @@ private:
     bool space_pressed = false;
     QList<QChar> pressed_buttons;
     QMap<QString, QList<double>> coordinates_of_players;
+    QMap<QString, QList<double>> time_of_visiting_control_points;
+
+    int nmb_of_contral_points;
+    QList<QPainterPath> control_points;
+    QMap<int, QPainterPath> map_id_to_path;
+    QMap<int, QList<qint64>> id_point_to_his_timestamps;
+    QList<int> id_to_numbs_visit_point = {1,1,1,1};
+
+
+    QList<qint64> time_of_intersection_control_points;
 
     void setCar();
     void drawCars(QPainter &painter);
@@ -68,14 +82,24 @@ private:
     void change_acceleration_of_speed();
     void shift_speed_up();
     void space_speed_down();
+    void drawControlPoint(QPainter &painter, QPainterPath path);
+    void setControlPoints(QList<QList<double> > control_points);
+    void drawControlPoints(QPainter &painter);
+
+
+    void drawStatistic(QPainter &painter);
+    void PrintStatistics(QPainter &painter);
+    void fill_road(QPainter &painter);
+    void CallPrintStatistics(QString message);
+    void setSoundEffect();
 protected:
     void keyPressEvent(QKeyEvent *event);
     double x = 0;
     double y = 0;
     double x_server;
     double y_server;
-    int center_x_window;
-    int center_y_window;
+    int center_x_window = -1;
+    int center_y_window = -1;
     char forward = ' ';
     QPainter* my_painter = nullptr;
     QPainter painter;

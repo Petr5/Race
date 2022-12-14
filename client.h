@@ -50,6 +50,7 @@ private:
     QTimer* timer;
     void CallUpdateUI(QString message);
     void start_the_game();
+    void CallUpdateTimeStamp(QString message);
 public slots:
 //    void slotSendToServer(int x, int y);
 

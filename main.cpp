@@ -6,7 +6,6 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    QString serverName("RaceServer");
 
     ConnectDialog dialog;
     dialog.show();

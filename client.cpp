@@ -58,12 +58,14 @@ void Client::setPointer_to_UI(Window* window){
 
 void Client::slotReadyRead()
 {
+//    qInfo() << "called slot readyRead";
     // Всё аналогично приёму информации на стороне сервера
     QDataStream in(localSocket);
     in.setVersion(QDataStream::Qt_5_3);
 //    present_yourself();
     for(;;)
     {
+//        qInfo() << "nextBlockSize now is " << nextBlockSize;
         if(!nextBlockSize)
         {
             if(localSocket->bytesAvailable() < (int)sizeof(quint16))
@@ -88,12 +90,17 @@ void Client::slotReadyRead()
             //qInfo() << "information about other players \n" << string;
             CallUpdateUI(string);
         }
+        else if (code == "411"){
+//            qInfo() << "code 411 ack";
+            CallUpdateTimeStamp(string);
+        }
         else if (code == "250"){
-            qInfo() << "code 150 ack!!!!!!!!!!!";
+//            qInfo() << "code 250 ack!!!!!!!!!!!";
 //            interactor;
             start_the_game();
 //            startTimer()
         }
+
         textEdit->append(time.toString() + " " + string);
         nextBlockSize = 0;
     }
