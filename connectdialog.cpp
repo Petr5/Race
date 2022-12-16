@@ -5,6 +5,7 @@
 ConnectDialog::ConnectDialog(QWidget *parent): QDialog(parent)
 {
 
+    setModal(true);
     mainLayout = new QGridLayout(this);
     hostname = new QLineEdit(this);
     port = new QLineEdit(this);

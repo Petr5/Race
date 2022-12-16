@@ -32,6 +32,8 @@ public slots:
     void checkControlPoints();
 private:
     QSoundEffect* effect;
+    QSoundEffect* crash_car;
+    QSoundEffect* speed_down;
 
     QTimer* timer;
     QPainterPath car;

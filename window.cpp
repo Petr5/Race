@@ -11,7 +11,7 @@ Window::Window(Client * client)
     this->client = client;
     NickName = client->NickName;
     client->setPointer_to_UI(this);
-    width_road = 180;
+    width_road = 90;
     setCar();
     setField();
     initialize_constant_of_moving();
@@ -38,6 +38,9 @@ Window::Window(Client * client)
 
 
     setSoundEffect();
+//    crash_car->play();
+//    effect->play();
+//    speed_down->play();
 }
 static int nmb_packet = -1;
 void Window::updateInformationForServer(){
@@ -68,10 +71,10 @@ void Client::start_the_game(){
     window->time_of_start_game = QDateTime::currentDateTime();
 }
 void Window::initialize_constant_of_moving(){
-    speed = 0.5;
+    speed = 4;
     standard_step_speed = 0.05 * speed;
     step_speed = standard_step_speed;
-    standard_max_speed = 3;
+    standard_max_speed = 7;
     max_speed = standard_max_speed;
     standard_declaration = 0.2 * standard_step_speed;
     deceleration = standard_declaration;
@@ -124,7 +127,7 @@ void Window::setField()
 //    ////qInfo() << "try to set field";
     roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
     roundRectPath.addRoundedRect(width_road , width_road , 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
-    double size_of_control_points = width_road / 2;
+    double size_of_control_points = width_road * 2;
     if (need_to_change_points) setControlPoints({{width_road / 4, width_road / 4, size_of_control_points, size_of_control_points}, {x_window - width_road ,  width_road / 4, size_of_control_points, size_of_control_points},
                       {x_window - width_road, y_window - width_road, size_of_control_points, size_of_control_points}, {width_road / 4, y_window - width_road , size_of_control_points, size_of_control_points}});
     need_to_change_points = false;
@@ -135,6 +138,7 @@ void Window::setField()
 void Window::setControlPoints(QList<QList<double>> control_points){
 //    this->control_points = control_points;
     qInfo()  <<"called setControlPoints";
+    this->control_points.clear();
     nmb_of_contral_points = control_points.size();
     qInfo() << "control points are " << control_points;
     foreach (QList<double> point, control_points) {
@@ -195,18 +199,33 @@ void Window::drawCar(QPainter &painter, double x, double y, double alpha)
 //    QTransform* t = new QTransform;
 //    t->translate(x, y).rotate( -alpha ).translate(-x, -y);
 //    car = t->map(car);
-    painter.drawPath(car);
+//    painter.drawPath(car);
 
     painter.resetTransform();
     painter.translate(width_road / 3 + x, width_road / 3 + y);
     painter.rotate(-alpha);
-    QImage image ("/home/peter/Race/car2.png");
-    image = image.scaled(40,20);
+
+
+    //    QImage cat("/home/peter/Race/cat.png");
+    //    painter.drawImage(0,0,cat);
+    //    painter.
+        QPixmap car ("/home/peter/Race/car_good.jpg");
+        car = car.scaled(40,30);
+        car.setMask(car.createHeuristicMask(Qt::TransparentMode));
+//        painter.drawPixmap(0,0, car,0,0,-1,-1,Qt::AutoColor);
+        painter.drawPixmap(0,0,car);
+    //    painter.drawPixmap(center_x_window, 0, original);
+    //    painter.drawImage(center_x_window *
+    //    painter.drawImage(0, 0, image);
+    //    painter.drawImage(center_x_window, 0, image);
+
+//    QImage image ("/home/peter/Race/car2.png");
+//    image = image.scaled(40,20);
 //    QMatrix rot;
 //    rot.rotate(90);
 //    QImage out = image.transformed(rot);
 //    image.tra
-    painter.drawImage(0, 0, image);
+//    painter.drawImage(0, 0, image);
 //    painter.drawPath(car);
 //    painter.fillPath(car, Qt::blue);
 
@@ -257,6 +276,7 @@ void Window::checkControlPoints(){
     }
 }
 void Window::PrintStatistics(QPainter &painter){
+    painter.resetTransform();
 //    qInfo() << "try to print statistic";
 //    qInfo() << "time_of_visiting_control_points is " << time_of_visiting_control_points;
     QString statistic = "Name   ";
@@ -267,15 +287,22 @@ void Window::PrintStatistics(QPainter &painter){
     statistic.append("\n");
 
 
+
     double size_of_text = 2 * width_road /3;
+//    double size_of_text = 2 * width_road /3;
     QFont font = painter.font() ;
 
+
     /* twice the size than the current font size */
-    font.setPointSize(3 * font.pointSize() /4);
+    double coeff = 1.5 * (2 * center_x_window / 800);
+    font.setPointSize(coeff * font.pointSize());
 
     /* set the modified font to the painter */
     painter.setFont(font);
-    double distance_between_rows_in_table = size_of_text /5;
+//    double distance_between_rows_in_table = size_of_text /5;
+    double distance_between_rows_in_table = font.pointSize();
+
+//    painter.setPen(Qt::red);
     painter.drawText(center_x_window - size_of_text, center_y_window- distance_between_rows_in_table, statistic);
 
     int j = 0;
@@ -313,31 +340,49 @@ void Window::CallPrintStatistics(QString message){
     }
 }
 void Window::fill_road(QPainter &painter){
+    painter.setBackgroundMode(::Qt::TransparentMode);
+
+    QImage background("/home/peter/Race/background_yellow.jpg");
+    background = background.scaled(2 * center_x_window, 2 * center_y_window);
+//    background.
+//            painter.clipPath();
+//            painter.
+    painter.drawImage(0,0,background);
 //    roundRectPath.addRoundedRect(0,0, 2 * center_x_window, 2 * center_y_window, 30, 30);
 //    roundRectPath.addRoundedRect(width_road , width_road , 2 * center_x_window - 2 * width_road, 2 * center_y_window - 2 * width_road,30,30);
-    QImage image("/home/peter/Race/road.jpeg");
+    QImage image("/home/peter/Race/road2.png");
 //    double
-    image.scaled(width_road, width_road);
-    for (int i = 0; i < center_x_window / width_road; ++i){
-        painter.drawImage(i * width_road, 0, image);
+    double length_of_road = width_road / 2;
+//    image = image.scaled(length_of_road, width_road );
+//    for (int i = 0; i < (2 * center_x_window - 2 * width_road) / length_of_road - 1; ++i){
+//        painter.drawImage(width_road + i * length_of_road, 0, image);
 
-    }
-    double step = width_road / 6;
-    int nmb_step = center_x_window / step;
-    double alpha = 0;
-    double alpha_step = 90 / nmb_step;
-    for (int i = 0; i < nmb_step; ++i){
-        painter.resetTransform();
-        painter.translate(center_x_window + i * step, 0);
+//    }
+    image = image.scaled(2*center_x_window - width_road * 1.6 - width_road * 1.55, width_road);
+    painter.drawImage(width_road * 1.6, 0, image);
+    painter.drawImage(width_road * 1.6, 2 * center_y_window - width_road, image);
 
-        painter.rotate(alpha);
-        painter.drawImage(0, 0, image);
-        alpha += alpha_step;
 
-    }
-//    painter.drawImage(0, 0, image);
-//    painter.drawImage(center_x_window, 0, image);
+    QImage vertical_road("/home/peter/Race/road2_vertical.png");
+    vertical_road = vertical_road.scaled(width_road, 2 * center_y_window -  1.6 * width_road -  1.6 * width_road);
+    painter.drawImage(0, 1.6 * width_road, vertical_road);
+    painter.drawImage(2 * center_x_window -  width_road, 1.6 * width_road, vertical_road);
 
+    QImage rot_road2("/home/peter/Race/rot_road2.png");
+    rot_road2 = rot_road2.scaled(width_road * 1.55, width_road * 1.7);
+    painter.drawImage(2 * center_x_window -  1.6 * width_road, 0, rot_road2);
+
+    QImage rot_road3("/home/peter/Race/rot_road3.png");
+    rot_road3 = rot_road3.scaled(width_road * 1.7, width_road * 1.55);
+    painter.drawImage(2 * center_x_window -  1.7 * width_road, 2 * center_y_window -  1.6 * width_road, rot_road3);
+
+    QImage rot_road("/home/peter/Race/rot_road.png");
+    rot_road = rot_road.scaled(width_road * 1.6, width_road * 1.7);
+    painter.drawImage(0, 0, rot_road);
+
+    QImage rot_road4("/home/peter/Race/rot_road4.png");
+    rot_road4 = rot_road4.scaled(width_road * 1.7, width_road * 1.6);
+    painter.drawImage(0, 2 * center_y_window -  1.6 * width_road, rot_road4);
 
 }
 void Window::PrintCurrentrating(){
@@ -368,6 +413,7 @@ void Window::paintEvent(QPaintEvent *event)
             }
 
             else blocked_direction = {3,4,5};
+            crash_car->play();
         }
         else {
             collision = false;
@@ -385,7 +431,7 @@ void Window::paintEvent(QPaintEvent *event)
 //    painter.fillRect(event->rect(), QBrush(Qt::white)
     painter.save();
     drawField(painter);
-//    fill_road(painter);
+    fill_road(painter);
     drawCars(painter);
     drawControlPoints(painter);
     PrintStatistics(painter);
@@ -528,12 +574,33 @@ void Window::change_acceleration_of_speed(){
     }
 }
 
+bool is_playing_speed_down = false;
+bool is_playing_speed_up = false;
 void Window::space_speed_down(){
     if (space_pressed) {
+        qInfo() << "space pressed";
         deceleration = 2 * standard_declaration;
+        is_playing_speed_up = false;
+        if (is_playing_speed_down){
+            ;
+        }
+        else{
+//            speed_down->play();
+            is_playing_speed_down = true;
+        }
     }
     else {
         deceleration = standard_declaration;
+        speed_down->stop();
+        qInfo() << "i was here";
+        if (!is_playing_speed_up){
+//            effect->play();
+            is_playing_speed_up = true;
+        }
+        else{
+            ;
+        }
+        is_playing_speed_down = false;
     }
 }
 
@@ -541,9 +608,17 @@ bool need_to_play_sound = true;
 
 void Window::setSoundEffect(){
     effect = new QSoundEffect();
-    effect->setSource(QUrl::fromLocalFile("/home/peter/Race/mixkit-fast-car-drive-by-1538.wav"));
+    effect->setSource(QUrl::fromLocalFile("/home/peter/Race/mototsikl-1000-kubsm-ezda-28947.wav"));
     effect->setLoopCount(QSoundEffect::Infinite);
-    effect->setVolume(0.25f);
+    effect->setVolume(1.f);
+    crash_car =  new QSoundEffect();
+    crash_car->setSource(QUrl::fromLocalFile("/home/peter/Race/material-zvukovoy-effekt-stolknoveniya-razdavit-39619.wav"));
+    crash_car->setLoopCount(1);
+    crash_car->setVolume(1.f);
+    speed_down =  new QSoundEffect();
+    speed_down->setSource(QUrl::fromLocalFile("/home/peter/Race/tormojenie-vizg-shin-33680.wav"));
+    speed_down->setLoopCount(QSoundEffect::Infinite);
+    speed_down->setVolume(1.f);
 }
 void Window::shift_speed_up(){
     if (shift_pressed) {
