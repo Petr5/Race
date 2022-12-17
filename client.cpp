@@ -8,7 +8,7 @@
 #include <QMessageBox>
 #include <QSignalMapper>
 
-Client::Client(QString serverName, int port, QDialog* dialog, QString NickName, QWidget* parent)
+Client::Client(QString serverName, int port, ConnectDialog* dialog, QString NickName, QWidget* parent)
     : QWidget(parent), nextBlockSize(0), dialog(dialog), NickName(NickName)
     // Устанавливаем nextBlockSize равным нулю
 {
@@ -25,7 +25,9 @@ Client::Client(QString serverName, int port, QDialog* dialog, QString NickName, 
     // Устанавливаем соединение между сигналом подключения сокета к серверу
     // и обработчиком сигнала
     connect(localSocket, SIGNAL(connected()), SLOT(slotConnected()));
-    connect(localSocket, SIGNAL(connected()), dialog, SLOT(slotClientConnected()));
+//    connect(localSocket, SIGNAL(connected()), (QObject*)dialog, SLOT(slotClientConnected()));
+    connect(localSocket, SIGNAL(connected()), (QObject*)dialog, SLOT(close()));
+
 
     connect(localSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
 
@@ -54,6 +56,7 @@ Client::~Client()
 void Client::setPointer_to_UI(Window* window){
     this->window = window;
 }
+
 
 
 void Client::slotReadyRead()
@@ -98,7 +101,14 @@ void Client::slotReadyRead()
 //            qInfo() << "code 250 ack!!!!!!!!!!!";
 //            interactor;
             start_the_game();
+
 //            startTimer()
+        }
+        else if (code == "600"){
+//            window
+            qInfo() << "message accepted from server is " << string;
+            QString winner = string.split(" ")[1];
+            CalldrawFinalTable(winner);
         }
 
         textEdit->append(time.toString() + " " + string);

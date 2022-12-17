@@ -6,6 +6,7 @@
 #include <QPainterPath>
 #include <QDateTime>
 #include <QSoundEffect>
+#include <QTimer>
 //#include <QMatrix>
 class Window : public QWidget
 {
@@ -21,6 +22,7 @@ public:
 
     void drawCar(QPainter &painter, double x, double y, double alpha);
     QDateTime time_of_start_game;
+    void drawFinalTable(QString message);
 public slots:
 
 private slots:
@@ -31,6 +33,10 @@ public slots:
     void PrintCurrentrating();
     void checkControlPoints();
 private:
+    QTimer* move_the_car;
+
+    QDateTime begin_of_time;
+
     QSoundEffect* effect;
     QSoundEffect* crash_car;
     QSoundEffect* speed_down;
@@ -42,6 +48,7 @@ private:
     int direction;
 
     double speed;
+    double standard_speed;
     double standard_step_speed;
     double step_speed;
     double standard_max_speed;
@@ -94,6 +101,9 @@ private:
     void fill_road(QPainter &painter);
     void CallPrintStatistics(QString message);
     void setSoundEffect();
+    void countdown();
+    void print_countdown(QPainter &painter);
+    void PrintTimeLap(QPainter& painter);
 protected:
     void keyPressEvent(QKeyEvent *event);
     double x = 0;

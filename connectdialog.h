@@ -17,7 +17,11 @@ class ConnectDialog: public QDialog
     Q_OBJECT
 public:
     explicit ConnectDialog(QWidget *parent = nullptr);
+    void hide_lobby();
+public slots:
+    void slotClientConnected();
 private:
+    QDialog* dialog;
     Client* client;
     QGridLayout *mainLayout;
     QLineEdit* hostname;
@@ -27,7 +31,6 @@ private:
 private slots:
     void slotPushButtonClicked();
 
-    void slotClientConnected();
 };
 
 #endif // CONNECTDIALOG_H

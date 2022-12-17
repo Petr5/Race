@@ -17,6 +17,7 @@
 //#endif
 class Window;
 class interactor;
+class ConnectDialog;
 class Client : public QWidget
 {
     Q_OBJECT
@@ -24,7 +25,7 @@ class Client : public QWidget
 public:
     friend class ConnectDialog;
     friend class Window;
-    Client(QString serverName, int port, QDialog* dialog, QString NickName, QWidget* parent = 0);
+    Client(QString serverName, int port, ConnectDialog* dialog, QString NickName, QWidget* parent = 0);
     ~Client();
     Window* window;
 
@@ -32,7 +33,7 @@ public:
     void setPointer_to_UI(Window *window);
 private:
 //    interactor* interactor;
-    QDialog* dialog;
+    ConnectDialog* dialog;
     QString NickName;
     // Указатель на QTcpSocket
     QTcpSocket* localSocket;
@@ -51,6 +52,7 @@ private:
     void CallUpdateUI(QString message);
     void start_the_game();
     void CallUpdateTimeStamp(QString message);
+    void CalldrawFinalTable(QString message);
 public slots:
 //    void slotSendToServer(int x, int y);
 

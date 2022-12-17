@@ -4,19 +4,29 @@
 #include <QTimer>
 #include <QSignalMapper>
 #include <QSoundEffect>
+#include <QThread>
+#include <QLabel>
+#include <QGridLayout>
+#include <QDialog>
 
 Window::Window(Client * client)
 
 {
+    begin_of_time = QDateTime::currentDateTime();
+    setCar();
+//    setField();
+//    update();
+//    countdown();
+
     this->client = client;
     NickName = client->NickName;
     client->setPointer_to_UI(this);
     width_road = 90;
-    setCar();
-    setField();
     initialize_constant_of_moving();
-    QTimer* move_the_car = new QTimer();
-   connect(move_the_car, SIGNAL(timeout()), this, SLOT(moveCar()));
+
+//    Q
+    move_the_car = new QTimer();
+    connect(move_the_car, SIGNAL(timeout()), this, SLOT(moveCar()));
 
     move_the_car->start(50);
 
@@ -42,6 +52,15 @@ Window::Window(Client * client)
 //    effect->play();
 //    speed_down->play();
 }
+
+bool is_started_playing = false;
+void Window::countdown(){
+//  begin_of_time = QDateTime::currentDateTime();
+  while (begin_of_time.msecsTo(QDateTime::currentDateTime()) < 3000){
+      ;
+  }
+  is_started_playing = true;
+}
 static int nmb_packet = -1;
 void Window::updateInformationForServer(){
 
@@ -65,14 +84,11 @@ void Client::CallUpdateTimeStamp(QString message){
 
     window->CallPrintStatistics(message);
 }
-void Client::start_the_game(){
-//   window = new Window(this);
-    window->show();
-    window->time_of_start_game = QDateTime::currentDateTime();
-}
+
 void Window::initialize_constant_of_moving(){
-    speed = 4;
-    standard_step_speed = 0.05 * speed;
+    speed = 0;
+    standard_speed = 4;
+    standard_step_speed = 0.05 * standard_speed;
     step_speed = standard_step_speed;
     standard_max_speed = 7;
     max_speed = standard_max_speed;
@@ -195,40 +211,15 @@ void Window::synchronizeClientWithServer(){
 void Window::drawCar(QPainter &painter, double x, double y, double alpha)
 {
     setCar();
-//    painter.resetTransform();
-//    QTransform* t = new QTransform;
-//    t->translate(x, y).rotate( -alpha ).translate(-x, -y);
-//    car = t->map(car);
-//    painter.drawPath(car);
 
     painter.resetTransform();
     painter.translate(width_road / 3 + x, width_road / 3 + y);
     painter.rotate(-alpha);
 
-
-    //    QImage cat("/home/peter/Race/cat.png");
-    //    painter.drawImage(0,0,cat);
-    //    painter.
-        QPixmap car ("/home/peter/Race/car_good.jpg");
-        car = car.scaled(40,30);
-        car.setMask(car.createHeuristicMask(Qt::TransparentMode));
-//        painter.drawPixmap(0,0, car,0,0,-1,-1,Qt::AutoColor);
-        painter.drawPixmap(0,0,car);
-    //    painter.drawPixmap(center_x_window, 0, original);
-    //    painter.drawImage(center_x_window *
-    //    painter.drawImage(0, 0, image);
-    //    painter.drawImage(center_x_window, 0, image);
-
-//    QImage image ("/home/peter/Race/car2.png");
-//    image = image.scaled(40,20);
-//    QMatrix rot;
-//    rot.rotate(90);
-//    QImage out = image.transformed(rot);
-//    image.tra
-//    painter.drawImage(0, 0, image);
-//    painter.drawPath(car);
-//    painter.fillPath(car, Qt::blue);
-
+    QPixmap car ("/home/peter/Race/car_good.jpg");
+    car = car.scaled(40,30);
+    car.setMask(car.createHeuristicMask(Qt::TransparentMode));
+    painter.drawPixmap(0,0,car);
 
 }
 void Window::drawControlPoint(QPainter &painter, QPainterPath path){
@@ -241,10 +232,51 @@ void Window::drawControlPoints(QPainter &painter){
     }
 }
 
+void Window::drawFinalTable(QString message){
+    qInfo() << "try draw FinalTable with " << message;
+    QDialog* table = new QDialog();
+    QGridLayout* layout = new QGridLayout(this);
+    QLabel *winner = new QLabel(this);
+    winner->setText("Winner:" + message);
+    layout->addWidget(winner, 0, 0);
+    int i = 1;
+    for (auto it = time_of_visiting_control_points.begin(); it != time_of_visiting_control_points.end(); ++it){
+        QLabel* name = new QLabel();
+        name->setText(it.key());
+        QLabel* resultat = new QLabel();
+        if (!it.value().size()){
+             resultat->setText("Nan");
+        }
+        else{
+            resultat->setText(QString::number(it.value()[it.value().size() - 1]));
+        }
+
+        layout->addWidget(name, i, 0);
+        layout->addWidget(resultat, i, 1);
+
+         ++i;
+    }
+    table->setLayout(layout);
+    table->show();
+    table->exec();
+    move_the_car->stop();
+//    exit(0);
+
+
+}
+void Client::CalldrawFinalTable(QString message){
+    window->drawFinalTable(message);
+}
+
 void Window::checkControlPoints(){
 //    qInfo() << "try check control points";
 //    qInfo() << "control_points size " << control_points.size();
     int id = 0;
+    if (id_to_numbs_visit_point[0] == 3){
+
+        client->SendToServer("600");
+
+    }
     foreach (QPainterPath path, control_points) {
         if (path.intersects(car) && !path.contains(car)){
 //            time_of_intersection_control_points.append(time_of_start_game.secsTo(QDateTime::currentDateTime()));
@@ -321,6 +353,7 @@ void Window::PrintStatistics(QPainter &painter){
 
 
 }
+
 void Window::CallPrintStatistics(QString message){
 //    qInfo() << "called CallPrintStatistics with message" << Qt::endl << message;
     int amount = message.split('\n')[0].split(" ")[1].toInt();
@@ -396,6 +429,49 @@ void Window::drawField(QPainter &painter)
 
     painter.drawPath(field);
 }
+void Window::print_countdown(QPainter &painter){
+        QFont font;
+        QFont default_font = painter.font();
+       font = painter.font();
+       font.setPointSize(100);
+       painter.setFont(font);
+    if (begin_of_time.msecsTo(QDateTime::currentDateTime()) < 1000){
+        painter.drawText(0.3 * center_x_window,center_y_window, QString::number(3));
+    }
+    else if (begin_of_time.msecsTo(QDateTime::currentDateTime()) < 2000){
+        painter.drawText(0.3 * center_x_window,center_y_window, QString::number(2));
+    }
+    else if (begin_of_time.msecsTo(QDateTime::currentDateTime()) < 3000){
+        painter.drawText(0.3 * center_x_window,center_y_window, QString::number(1));
+        is_started_playing = true;
+
+    }
+     painter.setFont(default_font);
+}
+void Window::PrintTimeLap(QPainter& painter){
+    QFont font;
+       font = painter.font();
+       font.setPointSize(20);
+       painter.setPen(Qt::red);
+       painter.setFont(font);
+    painter.drawText( 1.75 * center_x_window, 20, QString::number(begin_of_time.secsTo(QDateTime::currentDateTime())));
+    qint64 max = 0;
+    qint64 max_client = 0;
+
+//    for (auto it = time_of_visiting_control_points.begin(); it != time_of_visiting_control_points.end(); ++it){
+//        if (!it.value().size()) ;
+//        else{
+//            if (it.value()[it.value().size() - 1] > max) max = it.value()[it.value().size() - 1];
+//        }
+//    }
+//    max_client = *(time_of_visiting_control_points[NickName].end() - 1);
+//    painter.drawText(2 * center_x_window, 0, QDateTime::currentDateTime().toString());
+//    painter.setPen(Qt::yellow);
+
+//    painter.drawText(1.75 * center_x_window, 20, QString::number(max - max_client));
+
+
+}
 void Window::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
@@ -432,9 +508,11 @@ void Window::paintEvent(QPaintEvent *event)
     painter.save();
     drawField(painter);
     fill_road(painter);
+    print_countdown(painter);
     drawCars(painter);
-    drawControlPoints(painter);
     PrintStatistics(painter);
+    PrintTimeLap(painter);
+//    drawControlPoints(painter);
     painter.restore();
 
 }
@@ -644,6 +722,8 @@ void Window::shift_speed_up(){
 }
 
 void Window::moveCar(){
+    qInfo() << is_started_playing;
+    if (!is_started_playing) return ;
 //    qDebug() << "try to move car" << "current direction is "<< direction;
     shift_speed_up();
     space_speed_down();

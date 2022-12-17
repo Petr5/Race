@@ -39,18 +39,56 @@ void ConnectDialog::slotPushButtonClicked(){
     client = new Client(hostname->text(),port->text().toInt(), this, NickName->text());
     client->NickName = NickName->text();
     client->show();
+    dialog = new QDialog();
+    QGridLayout* layout = new QGridLayout();
+//    QPushButton * button = new QPushButton(dialog);
+//    button->setText(tr("ready"));
+    auto infoLabel = new QLabel(tr("waiting for connection"));
+//    infoLabel->setBuddy(button);
+//    connect();
+    layout->addWidget(infoLabel, 0, 0);
+//    layout->addWidget(button, 0, 0);
+    dialog->setLayout(layout);
+    dialog->show();
+
 //    interactor* interactor = new class interactor(client);
-    Window *window = new Window(client);
+//    Window *window = new Window(client);
 //    connect(client->localSocket, SIGNAL(connected()), this, SLOT(slotClientConnected()));
 
 }
 
+void ConnectDialog::hide_lobby(){
+    dialog->hide();
+}
+
+void Client::start_the_game(){
+
+
+
+    window = new Window(this);
+    window->show();
+    window->time_of_start_game = QDateTime::currentDateTime();
+    dialog->hide_lobby();
+}
+
 void ConnectDialog::slotClientConnected(){
-    qInfo() << "try hide dialog and open client";
-    QMessageBox::information(this, "LogIn", "LogIn successfully");
-    qInfo() << "try to show client!!!!";
-//    client->show();
-//    client->setVisible(true);
-    hide();
+//    qInfo() << "try hide dialog and open client";
+//    QMessageBox::information(this, "LogIn", "LogIn successfully");
+//    qInfo() << "try to show client!!!!";
+////    client->show();
+////    client->setVisible(true);
+//    hide();
+
+    dialog = new QDialog();
+    QGridLayout* layout = new QGridLayout();
+//    QPushButton * button = new QPushButton(dialog);
+//    button->setText(tr("ready"));
+    auto infoLabel = new QLabel(tr("waiting for connection"));
+//    infoLabel->setBuddy(button);
+//    connect();
+    layout->addWidget(infoLabel, 0, 0);
+//    layout->addWidget(button, 0, 0);
+    dialog->setLayout(layout);
+    dialog->show();
 
 }
