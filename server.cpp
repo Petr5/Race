@@ -98,7 +98,7 @@ void Server::slotNewConnection()
 }
 
 bool Server::Check_full_lobby(){
-    if (sockets_of_clients.size() >= 1){
+    if (sockets_of_clients.size() >= 2){
         return true;
     }
     else return false;
@@ -168,6 +168,14 @@ void Server::slotReadClient()
                 qInfo() << list;
                 time_of_visiting_control_points[NickName] = list;
                 qInfo() << "now time_of_visiting_control_points for " + NickName + "is " << time_of_visiting_control_points[NickName];
+            }
+            else if (code == "600"){
+                foreach(QTcpSocket* socket, sockets_of_clients){
+                    QString message = "600 " + NickName;
+                    qInfo() << "serverr sent to client " << message;
+                    sendToClient(socket, message);
+                }
+
             }
             else{
 //                QMessageBox::critical(this, "unknown code", code);
