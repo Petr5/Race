@@ -5,7 +5,7 @@
 ConnectDialog::ConnectDialog(QWidget *parent): QDialog(parent)
 {
 
-    setModal(true);
+//    setModal(true);
     mainLayout = new QGridLayout(this);
     hostname = new QLineEdit(this);
     port = new QLineEdit(this);
@@ -38,7 +38,7 @@ void ConnectDialog::slotPushButtonClicked(){
 
     client = new Client(hostname->text(),port->text().toInt(), this, NickName->text());
     client->NickName = NickName->text();
-    client->show();
+//    client->show();
     dialog = new QDialog();
     QGridLayout* layout = new QGridLayout();
 //    QPushButton * button = new QPushButton(dialog);
@@ -62,7 +62,7 @@ void ConnectDialog::hide_lobby(){
 }
 
 void Client::start_the_game(){
-
+    qInfo() << "called start the game";
 
 
     window = new Window(this);
@@ -77,7 +77,7 @@ void ConnectDialog::slotClientConnected(){
 //    qInfo() << "try to show client!!!!";
 ////    client->show();
 ////    client->setVisible(true);
-//    hide();
+    hide();
 
     dialog = new QDialog();
     QGridLayout* layout = new QGridLayout();

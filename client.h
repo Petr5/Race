@@ -10,7 +10,7 @@
 #include <QTextEdit>
 #include <QPushButton>
 #include <QTimer>
-
+#include <QSslSocket>
 //#ifndef WINDOW_H
 //#include "window.h"
 //#define WINDOW_H
@@ -36,7 +36,7 @@ private:
     ConnectDialog* dialog;
     QString NickName;
     // Указатель на QTcpSocket
-    QTcpSocket* localSocket;
+    QSslSocket* localSocket;
 
     // Указатели на элементы интерфейса
     QTextEdit* textEdit;
@@ -54,6 +54,7 @@ private:
     void CallUpdateTimeStamp(QString message);
     void CalldrawFinalTable(QString message);
 public slots:
+    void slotNewConnection();
 //    void slotSendToServer(int x, int y);
 
 private slots:

@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QGridLayout>
 #include <QDialog>
+#include <QtMath>
 
 Window::Window(Client * client)
 
@@ -28,7 +29,7 @@ Window::Window(Client * client)
     move_the_car = new QTimer();
     connect(move_the_car, SIGNAL(timeout()), this, SLOT(moveCar()));
 
-    move_the_car->start(50);
+    move_the_car->start(10);
 
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(updateInformationForServer()));
@@ -87,10 +88,10 @@ void Client::CallUpdateTimeStamp(QString message){
 
 void Window::initialize_constant_of_moving(){
     speed = 0;
-    standard_speed = 4;
+    standard_speed = 2;
     standard_step_speed = 0.05 * standard_speed;
     step_speed = standard_step_speed;
-    standard_max_speed = 7;
+    standard_max_speed = 5;
     max_speed = standard_max_speed;
     standard_declaration = 0.2 * standard_step_speed;
     deceleration = standard_declaration;
@@ -218,7 +219,7 @@ void Window::drawCar(QPainter &painter, double x, double y, double alpha)
 
     QPixmap car ("/home/peter/Race/car_good.jpg");
     car = car.scaled(40,30);
-    car.setMask(car.createHeuristicMask(Qt::TransparentMode));
+//    car.setMask(car.createHeuristicMask(Qt::TransparentMode));
     painter.drawPixmap(0,0,car);
 
 }
@@ -231,6 +232,7 @@ void Window::drawControlPoints(QPainter &painter){
         drawControlPoint(painter, path);
     }
 }
+
 
 void Window::drawFinalTable(QString message){
     qInfo() << "try draw FinalTable with " << message;
@@ -260,7 +262,7 @@ void Window::drawFinalTable(QString message){
     table->show();
     table->exec();
     move_the_car->stop();
-//    exit(0);
+    exit(0);
 
 
 }
@@ -416,6 +418,15 @@ void Window::fill_road(QPainter &painter){
     QImage rot_road4("/home/peter/Race/rot_road4.png");
     rot_road4 = rot_road4.scaled(width_road * 1.7, width_road * 1.6);
     painter.drawImage(0, 2 * center_y_window -  1.6 * width_road, rot_road4);
+
+    QImage finish_line("/home/peter/Race/finish_line2.png");
+    finish_line = finish_line.scaled(width_road / 2, width_road);
+    painter.drawImage(width_road * 1.3 , 0 , finish_line);
+//    QImage finish_line2("/home/peter/Race/finish_line.jpeg");
+
+//    finish_line2 = finish_line2.scaled(10, width_road);
+
+
 
 }
 void Window::PrintCurrentrating(){
@@ -663,7 +674,7 @@ void Window::space_speed_down(){
             ;
         }
         else{
-//            speed_down->play();
+            speed_down->play();
             is_playing_speed_down = true;
         }
     }
@@ -672,7 +683,7 @@ void Window::space_speed_down(){
         speed_down->stop();
         qInfo() << "i was here";
         if (!is_playing_speed_up){
-//            effect->play();
+            effect->play();
             is_playing_speed_up = true;
         }
         else{
@@ -724,7 +735,7 @@ void Window::shift_speed_up(){
 void Window::moveCar(){
     qInfo() << is_started_playing;
     if (!is_started_playing) return ;
-//    qDebug() << "try to move car" << "current direction is "<< direction;
+    qDebug() << "try to move car" << "current direction is "<< direction;
     shift_speed_up();
     space_speed_down();
     define_the_direction_ofmoving();

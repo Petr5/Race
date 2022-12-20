@@ -13,23 +13,22 @@ Client::Client(QString serverName, int port, ConnectDialog* dialog, QString Nick
     // Устанавливаем nextBlockSize равным нулю
 {
     // Инициализируем сокет
-    localSocket = new QTcpSocket(this);
+    localSocket = new QSslSocket(this);
 
-//    QString serverName = "RaceServer";
     // Устанавливаем соединение между сигналом ошибки сокета с обработчиком ошибок
     connect(localSocket, &QTcpSocket::errorOccurred, this, &Client::slotError);
 
     localSocket->bytesToWrite();
     qInfo() << "server name " << serverName;
 
-    // Устанавливаем соединение между сигналом подключения сокета к серверу
-    // и обработчиком сигнала
-    connect(localSocket, SIGNAL(connected()), SLOT(slotConnected()));
-//    connect(localSocket, SIGNAL(connected()), (QObject*)dialog, SLOT(slotClientConnected()));
-    connect(localSocket, SIGNAL(connected()), (QObject*)dialog, SLOT(close()));
 
 
-    connect(localSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
+
+    localSocket->addCaCertificates("sslserver.pem");
+
+    localSocket->connectToHostEncrypted(serverName, port);
+    connect(localSocket, SIGNAL(connected()), this, SLOT(slotNewConnection()));
+
 
     // Инициализируем элементы интерфейса
     textEdit = new QTextEdit;
@@ -42,7 +41,16 @@ Client::Client(QString serverName, int port, ConnectDialog* dialog, QString Nick
 
     // Подключаем сокет к серверу
 //    localSocket->connectToServer();
-    localSocket->connectToHost(serverName, port);
+//    localSocket->connectToHost(serverName, port);
+}
+void Client::slotNewConnection(){
+    qInfo() << "called slotNewConnection";
+    connect(localSocket, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
+    QTimer* timer = new QTimer();
+   connect(timer, SIGNAL(timeout()), this, SLOT(present_yourself()));
+
+    timer->start(5000);
+    present_yourself();
 }
 
 Client::~Client()
@@ -61,7 +69,7 @@ void Client::setPointer_to_UI(Window* window){
 
 void Client::slotReadyRead()
 {
-//    qInfo() << "called slot readyRead";
+    qInfo() << "called slot readyRead";
     // Всё аналогично приёму информации на стороне сервера
     QDataStream in(localSocket);
     in.setVersion(QDataStream::Qt_5_3);
@@ -82,11 +90,12 @@ void Client::slotReadyRead()
         QTime time;
         QString string;
         in >> time >> string;
+        qInfo() << "read from server string " << string;
         QString code = string.split(" ")[0];
         if (code == "ACK"){
             if (string.split(" ")[1] == "Name") {
                 server_authenticate = true;
-                timer->stop();
+//                timer->stop();
             }
         }
         else if (code == "211"){
@@ -98,11 +107,9 @@ void Client::slotReadyRead()
             CallUpdateTimeStamp(string);
         }
         else if (code == "250"){
-//            qInfo() << "code 250 ack!!!!!!!!!!!";
-//            interactor;
+            qInfo() << "code 250(start  the game) ack";
             start_the_game();
 
-//            startTimer()
         }
         else if (code == "600"){
 //            window
@@ -111,8 +118,9 @@ void Client::slotReadyRead()
             CalldrawFinalTable(winner);
         }
 
-        textEdit->append(time.toString() + " " + string);
+//        textEdit->append(time.toString() + " " + string);
         nextBlockSize = 0;
+        qInfo() << "end";
     }
 }
 
