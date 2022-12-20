@@ -5,9 +5,15 @@
 #define SERVER_H
 
 #include <QDialog>
-#include <QTcpSocket>
+#include <QSslSocket>
 #include <QTextEdit>
 #include <QTimer>
+#include <QTcpServer>
+#include <QSsl>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QSslSocket>
+
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QPushButton;
@@ -16,12 +22,15 @@ QT_END_NAMESPACE
 
 
 
-class Server : public QDialog
+class Server : public QTcpServer
 {
     Q_OBJECT
 
+protected:
+    void incomingConnection(qintptr socketDescriptor) override final;
 public:
-    explicit Server(QWidget *parent = nullptr);
+    explicit Server(QWidget *parent = nullptr, int amount = 1);
+    int amount = 1;
     quint16 nextBlockSize;
 private slots:
     void ReadClient();
@@ -29,10 +38,15 @@ private slots:
 
     void slotNewConnection();
 private:
+    QSslSocket* localSocket;
+    QSslCertificate m_sslLocalCertificate;
+    QSslKey m_sslPrivateKey;
+    QSsl::SslProtocol m_sslProtocol;
+
     static int cuurent_id_user;
     QList<QString> NickNames;
 //    QString NickName;
-    QList<QTcpSocket*> sockets_of_clients;
+    QList<QSslSocket*> sockets_of_clients;
     QMap<QString, QList<double>> coordinates_of_players;
     QMap<QString, QList<double>> time_of_visiting_control_points;
     QTcpServer *server;
@@ -40,15 +54,23 @@ private:
     QLabel *statusLabel;
 //    void SendACK();
     QTextEdit* textEdit;
-    void sendToClient(QTcpSocket *localSocket, const QString &string);
-    void SendACK(QTcpSocket *localSocket);
-    void SendACKName(QTcpSocket *localSocket);
-    void SendACKPosition(QTcpSocket *localSocket);
+    void sendToClient(QSslSocket *localSocket, const QString &string);
+    void SendACK(QSslSocket *localSocket);
+    void SendACKName(QSslSocket *localSocket);
+    void SendACKPosition(QSslSocket *localSocket);
 //    void initializeServerConstant();
-    void sendPlayersPosition(QTcpSocket *localSocket, int nmb_packet);
+    void sendPlayersPosition(QSslSocket *localSocket, int nmb_packet);
 
     bool Check_full_lobby();
-    void sendPlayersTimeVisitedCPoints(QTcpSocket *localSocket, int nmb_packet);
+    void sendPlayersTimeVisitedCPoints(QSslSocket *localSocket, int nmb_packet);
+
+    void setSslLocalCertificate(const QSslCertificate &certificate);
+    bool setSslLocalCertificate(const QString &path, QSsl::EncodingFormat format = QSsl::Pem);
+
+    void setSslPrivateKey(const QSslKey &key);
+    bool setSslPrivateKey(const QString &fileName, QSsl::KeyAlgorithm algorithm = QSsl::Rsa, QSsl::EncodingFormat format = QSsl::Pem, const QByteArray &passPhrase = QByteArray());
+
+    void setSslProtocol(QSsl::SslProtocol protocol);
 };
 
 

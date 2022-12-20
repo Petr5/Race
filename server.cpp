@@ -5,57 +5,94 @@
 
 #include <QtWidgets>
 #include <QtNetwork>
+#include <QMessageBox>
 
-Server::Server(QWidget *parent)
-    : QDialog(parent)
+Server::Server(QWidget *parent, int amount)
+    : QTcpServer(parent), amount(amount)
 {
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-    QString serverName("RaceServer");
+    QDialog* dialog = new QDialog;
+    QGridLayout* layout = new QGridLayout();
+    dialog->setLayout(layout);
+    QPushButton* button = new QPushButton;
+    QLabel* label = new QLabel;
+    QLineEdit* lineEdit = new QLineEdit;
+
+    label->setText(tr("Enter amount of players"));
+    layout->addWidget(label,0,0);
+    layout->addWidget(button,0,1);
+    layout->addWidget(lineEdit, 1,0);
+    connect(button, &QPushButton::clicked, [=](){
+        this->amount = (lineEdit->text()).toInt();
+        dialog->hide();
+    });
+    dialog->show();
 
     QHostAddress* addr = new QHostAddress("127.0.0.1");
 
-    server = new QTcpServer(this);
-    if (!server->listen(*addr, 3333)) {
-        QMessageBox::critical(this, tr("Local Race Server"),
-                              tr("Unable to start the server: %1.")
-                              .arg(server->errorString()));
+    setSslLocalCertificate("sslserver.pem");
+    setSslPrivateKey("sslserver.key");
+    setSslProtocol(QSsl::TlsV1_2);
+    if (!listen(*addr, 3333)) {
+//        QMessageBox::critical(this, tr("Local Race Server"),
+//                              tr("Unable to start the server: %1.")
+//                              .arg(server->errorString()));
         close();
         return;
     }
 
-    statusLabel = new QLabel;
-    statusLabel->setWordWrap(true);
-    statusLabel->setText(tr("The server is running.\n"));
+}
 
-    fortunes << tr("ACK")
-             << tr("ACK2");
+void Server::incomingConnection(qintptr socketDescriptor){
 
-    QPushButton *quitButton = new QPushButton(tr("Quit"));
-    quitButton->setAutoDefault(false);
-    connect(quitButton, &QPushButton::clicked, this, &Server::close);
+    localSocket = new QSslSocket((QTcpServer *)this);
+//    localSocket->addCaCertificate("")
+    localSocket->setSocketDescriptor(socketDescriptor);
+    localSocket->setLocalCertificate(m_sslLocalCertificate);
+    localSocket->setPrivateKey(m_sslPrivateKey);
+    localSocket->setProtocol(m_sslProtocol);
+    localSocket->startServerEncryption();
 
-    connect(server, &QTcpServer::newConnection, this, &Server::slotNewConnection);
+    ((QTcpServer *)this)->connect((QTcpServer *)this, SIGNAL(newConnection()), (QTcpServer *)this, SLOT(slotNewConnection()));
+
+    this->addPendingConnection(localSocket);
+}
+void Server::setSslLocalCertificate(const QSslCertificate &certificate)
+{
+    m_sslLocalCertificate = certificate;
+}
+
+bool Server::setSslLocalCertificate(const QString &path, QSsl::EncodingFormat format)
+{
+    QFile certificateFile(path);
+
+    if (!certificateFile.open(QIODevice::ReadOnly))
+        return false;
+
+    m_sslLocalCertificate = QSslCertificate(certificateFile.readAll(), format);
+    return true;
+}
 
 
-    textEdit = new QTextEdit;
-    textEdit->setReadOnly(true);
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addStretch(1);
-    buttonLayout->addWidget(quitButton);
-    buttonLayout->addStretch(1);
+void Server::setSslPrivateKey(const QSslKey &key)
+{
+    m_sslPrivateKey = key;
+}
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(statusLabel);
-    mainLayout->addLayout(buttonLayout);
-    mainLayout->addWidget(textEdit);
+bool Server::setSslPrivateKey(const QString &fileName, QSsl::KeyAlgorithm algorithm, QSsl::EncodingFormat format, const QByteArray &passPhrase)
+{
+    QFile keyFile(fileName);
 
-    setWindowTitle(QGuiApplication::applicationDisplayName());
+    if (!keyFile.open(QIODevice::ReadOnly))
+        return false;
 
-//    initializeServerConstant();
+    m_sslPrivateKey = QSslKey(keyFile.readAll(), algorithm, format, QSsl::PrivateKey, passPhrase);
+    return true;
+}
 
-//    QTimer* sendPlayerPosition_timer = new QTimer();
-//    connect(sendPlayerPosition_timer, SIGNAL(timeout()), this, SLOT(updateInformationForServer()));
-//    sendPlayerPosition_timer->start(5000);
+
+void Server::setSslProtocol(QSsl::SslProtocol protocol)
+{
+    m_sslProtocol = protocol;
 }
 
 
@@ -65,8 +102,8 @@ Server::Server(QWidget *parent)
 int Server::cuurent_id_user = 0;
 
 void Server::ReadClient(){
-    //qInfo() << "try to read data from client";
-    QTcpSocket *sock = server->nextPendingConnection();
+    qInfo() << "try to read data from client";
+    QSslSocket *sock = dynamic_cast<QSslSocket*>(nextPendingConnection());
 
     if( !sock->waitForConnected() )
         return;
@@ -83,30 +120,39 @@ void Server::ReadClient(){
 void Server::slotNewConnection()
 {
     qInfo() << "slot new connection triggered";
-    QTcpSocket* localSocket = server->nextPendingConnection();
+    QTcpSocket *socket = nextPendingConnection();
+    qInfo() << socket;
+
+    QSslSocket* localSocket = dynamic_cast<QSslSocket*>(socket);
+    qInfo() << localSocket;
+    ((QTcpServer *)this)->connect(localSocket, SIGNAL(readyRead()), (QTcpServer *)this, SLOT(slotReadClient()));
+//    ((QTcpServer *)this)->connect(localSocket, SIGNAL(encrypted()), (QTcpServer *)this, SLOT(slotReadClient()));
 
     sockets_of_clients.append(localSocket);
     if (Check_full_lobby()){
-        foreach (QTcpSocket* sock, sockets_of_clients) {
+        qInfo() << "lobby is full";
+        foreach (QSslSocket* sock, sockets_of_clients) {
 
             sendToClient(sock, "250 All connected");
         }
     }
-    connect(localSocket, SIGNAL(disconnected()), localSocket, SLOT(deleteLater()));
-    connect(localSocket, SIGNAL(readyRead()), this, SLOT(slotReadClient()));
-    sendToClient(localSocket, "Server response: Connected!");
+    ((QTcpServer *)this)->connect(localSocket, SIGNAL(disconnected()), localSocket, SLOT(deleteLater()));
+//    sendToClient(localSocket, "Server response: Connected!");
 }
 
 bool Server::Check_full_lobby(){
-    if (sockets_of_clients.size() >= 2){
+    if (sockets_of_clients.size() >= amount){
         return true;
     }
     else return false;
 }
 
+bool is_sent_endgame = false;
 void Server::slotReadClient()
 {
-    QTcpSocket* localSocket = (QTcpSocket*)sender();
+
+//    ((QTcpServer *)this)->sender();
+    QSslSocket* localSocket = (QSslSocket*)sender();
 
     QDataStream in(localSocket);
     in.setVersion(QDataStream::Qt_5_3);
@@ -131,7 +177,7 @@ void Server::slotReadClient()
             QString code = string.split(" ")[1];
 
             if (code == "100"){
-                //qInfo() << "try Nickname for current user";
+//                qInfo() << "try Nickname for current user";
     //            NickNames = string.split(" ")[1];
     //            NickNames[Server::cuurent_id_user++] =  string.split(" ")[1];
     //            NickNames.append(string.split(" ")[1]);
@@ -170,10 +216,13 @@ void Server::slotReadClient()
                 qInfo() << "now time_of_visiting_control_points for " + NickName + "is " << time_of_visiting_control_points[NickName];
             }
             else if (code == "600"){
-                foreach(QTcpSocket* socket, sockets_of_clients){
-                    QString message = "600 " + NickName;
-                    qInfo() << "serverr sent to client " << message;
-                    sendToClient(socket, message);
+                if (!is_sent_endgame){
+                    foreach(QSslSocket* socket, sockets_of_clients){
+                        QString message = "600 " + NickName;
+                        qInfo() << "serverr sent to client " << message;
+                        sendToClient(socket, message);
+                    }
+                    is_sent_endgame = true;
                 }
 
             }
@@ -183,24 +232,17 @@ void Server::slotReadClient()
             }
 
             QString message = time.toString() + " " + "Client has sent - " + string;
-            textEdit->append(message);
+//            textEdit->append(message);
 
             nextBlockSize = 0;
 
-            // Отправляем ответ клиенту
-
-//            sendToClient(localSocket, "Server response: received \"" + string + "\"");
-    //        SendACK(localSocket);
-
-    //        SendACK(localSocket);
         }
         else{
-            //qInfo() << "send empty string";
             QString message = time.toString() + " " + "Client has sent - " + string;
 
             nextBlockSize = 0;
 
-            textEdit->append(message);
+//            textEdit->append(message);
             sendToClient(localSocket, "Server response: received \"" + string + "\"");
 
         }
@@ -209,8 +251,9 @@ void Server::slotReadClient()
 }
 
 // Метод для отправки клиенту подтверждения о приёме информации
-void Server::sendToClient(QTcpSocket* localSocket, const QString& string)
+void Server::sendToClient(QSslSocket* localSocket, const QString& string)
 {
+    qInfo() << "try sent to client " << string;
     // Поскольку заранее размер блока неизвестен (параметр string может быть любой длины),
     // вначале создаём объект array класса QByteArray
     QByteArray array;
@@ -227,23 +270,24 @@ void Server::sendToClient(QTcpSocket* localSocket, const QString& string)
     out.device()->seek(0);
     // Записываем двухбайтное значение действительного размера блока без учёта пересылаемого размера блока
     out << quint16(array.size() - sizeof(quint16));
-
+     out << QTime::currentTime() << string;
     // Отправляем получившийся блок клиенту
+    qInfo() << "try to localSocket->write";
     localSocket->write(array);
 }
 
-void Server::SendACK(QTcpSocket* localSocket){
+void Server::SendACK(QSslSocket* localSocket){
     sendToClient(localSocket, "ACK");
 }
 
-void Server::SendACKName(QTcpSocket* localSocket){
+void Server::SendACKName(QSslSocket* localSocket){
     sendToClient(localSocket, "ACK Name");
 }
-void Server::SendACKPosition(QTcpSocket* localSocket){
+void Server::SendACKPosition(QSslSocket* localSocket){
     sendToClient(localSocket, "ACK Position");
 }
 
-void Server::sendPlayersPosition(QTcpSocket* localSocket, int nmb_packet){
+void Server::sendPlayersPosition(QSslSocket* localSocket, int nmb_packet){
     QString message = "211 " + QString::number(coordinates_of_players.size()) + '\n';
     for (auto it = coordinates_of_players.begin(); it != coordinates_of_players.end(); ++it){
         message += it.key() + " " + QString::number(it.value()[0]) + " " + QString::number(it.value()[1]) + " " + QString::number(it.value()[2]) + '\n';
@@ -252,7 +296,7 @@ void Server::sendPlayersPosition(QTcpSocket* localSocket, int nmb_packet){
     sendToClient(localSocket, message);
 }
 
-void Server::sendPlayersTimeVisitedCPoints(QTcpSocket* localSocket, int nmb_packet){
+void Server::sendPlayersTimeVisitedCPoints(QSslSocket* localSocket, int nmb_packet){
     QString message = "411 " + QString::number(time_of_visiting_control_points.size()) + '\n';
     for (auto it = time_of_visiting_control_points.begin(); it != time_of_visiting_control_points.end(); ++it){
         QList<double> visited_points = it.value();
